@@ -25,7 +25,6 @@ Model Predictive Control example
 ================================
 
 """
-
 from rockit import *
 from casadi import *
 
@@ -66,13 +65,13 @@ dt    = Tf/Nhor             # sample time'''
 nx    = 12                   # the system is composed of 12 states
 nu    = 2                   # the system has 2 input
 Tf    = 4                   # control horizon [s]
-Nhor  = 400                  # number of control intervals
+Nhor  = 40                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
-starting_angle = 0.00
-x_1 = 4.0
+starting_angle = 0.0
+x_1 = 3.0
 y_1 = -5.0
-x2 = 4.0
+x2 = 3.0
 y2 = 25.0
 a_k = np.math.atan2(y2-y_1, x2-x_1)
 ned_x = 0.0
@@ -80,14 +79,14 @@ ned_y = 0.0
 y_e = -(ned_x-x_1)*np.sin(a_k)+(ned_y-y_1)*np.cos(a_k)
 current_X = vertcat(starting_angle, np.sin(starting_angle), np.cos(starting_angle), 0.001, 0.00, 0.00, y_e, a_k, ned_x, ned_y, 0.00, 0.00)  # initial state
 
-u_ref = 1.0
+u_ref = 1.2
 ak_ref = a_k
 sinpsi_ref = np.sin(ak_ref)
 cospsi_ref = np.cos(ak_ref)
 ye_ref = 0.0
 final_X   = vertcat(0, sinpsi_ref, cospsi_ref, u_ref, 0, 0, ye_ref, 0, 0, 0, 0, 0, 0, 0)    # desired terminal state
 
-Nsim  = int(60 * Nhor / Tf)#200                 # how much samples to simulate
+Nsim  = int(30 * Nhor / Tf)                 # how much samples to simulate
 add_noise = False #True            # enable/disable the measurement noise addition in simulation
 add_disturbance = False #True      # enable/disable the disturbance addition in simulation
 
@@ -113,7 +112,7 @@ ocp = Ocp(T=Tf)
 
 # Define states
 '''pos    = ocp.state()  # [m]
-theta  = ocp.state()  # [rad]
+theta  = ocp.state()  # [rad]2.0,
 dpos   = ocp.state()  # [m/s]
 dtheta = ocp.state()  # [rad/s]'''
 #x = ocp.state(10)
@@ -139,7 +138,6 @@ ocp.set_initial(u,0.001)
 #ocp.set_initial(nedy,0.001)
 #ocp.set_initial(Tport,0.001)
 #ocp.set_initial(Tstbd,0.001)
-
 
 # Defince controls
 #F = ocp.control(nu, order=0)
@@ -171,13 +169,13 @@ obs_pos = ocp.parameter(16)
 obs_rad = ocp.parameter(8)
 
 # Specify ODE
-Xu = if_else(u > 1.25, 64.55, -25)
-Xuu = if_else(u > 1.25, -70.92, 0)
+Xu = if_else(u > 1.2627, 64.55, -25.0)
+Xuu = if_else(u > 1.2627, -70.92, 0.0)
 Yv = 0.5*(-40*1000*fabs(v))*(1.1+0.0045*(1.01/0.09)-0.1*(0.27/0.09)+0.016*((0.27/0.09)*(0.27/0.09)))
-Nr = (-0.52)*sqrt(u*u + v*v)
+Nr = -3#(-0.52)*sqrt(u*u + v*v)
 Tu = Tport + c * Tstbd
 Tr = (Tport - c * Tstbd) * B / 2
-beta = atan2(v,u+.001)
+beta = 0#atan2(v,u+.001)
 chi = psi + beta
 distance1 = sqrt((nedx-obs_pos[0])*(nedx-obs_pos[0]) + (nedy-obs_pos[1])*(nedy-obs_pos[1]))
 distance2 = sqrt((nedx-obs_pos[2])*(nedx-obs_pos[2]) + (nedy-obs_pos[3])*(nedy-obs_pos[3]))
@@ -208,15 +206,15 @@ danger_zone = 0.2
 # Lagrange objective
 #ocp.add_objective(ocp.integral(F*2 + 100*pos**2))
 #ocp.add_objective(ocp.integral(0.5*(ye-ye_ref)**2 + 2.0*(sinpsi-sinpsi_ref)**2 + 2.0*(cospsi-cospsi_ref)**2 + 30*(u-u_ref)**2 + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2))
-ocp.add_objective(ocp.integral(0.5*(ye-ye_ref)**2 + 2.0*(sinpsi-sinpsi_ref)**2 + 2.0*(cospsi-cospsi_ref)**2 + 30*(u-u_ref)**2 
-                                + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2 + 50*slack1u + 50*slack1l + 50*slack2u + 50*slack2l 
+ocp.add_objective(ocp.integral(5.0*(ye-ye_ref)**2 + 0.5*(sinpsi-sinpsi_ref)**2 + 0.5*(cospsi-cospsi_ref)**2 + 40*(u-u_ref)**2 
+                                + 0.05*r**2 + 0.0005*Tstbd**2 + 0.0005*Tport**2 + 50*slack1u + 50*slack1l + 50*slack2u + 50*slack2l 
                                 + 50*slack3u + 50*slack3l + 50*slack4u + 50*slack4l + 50*slack5u + 50*slack5l + 50*slack6u + 50*slack6l 
                                 + 50*slack7u + 50*slack7l + 50*slack8u + 50*slack8l))
 '''ocp.add_objective(ocp.integral(0.5*(ye-ye_ref)**2 + 2.0*(sinpsi-sinpsi_ref)**2 + 2.0*(cospsi-cospsi_ref)**2 + 30*(u-u_ref)**2 
                                 + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2 + 50*slack1l + 50*slack2l + 50*slack3l + 50*slack4l 
                                 + 50*slack5l + 50*slack6l + 50*slack7l + 50*slack8l))'''
-ocp.add_objective(ocp.at_tf(1.0*(ye-ye_ref)**2 + 4.0*(sinpsi-sinpsi_ref)**2 + 4.0*(cospsi-cospsi_ref)**2 + 60*(u-u_ref)**2 
-                                + 0.2*r**2 + 0.002*Tstbd**2 + 0.002*Tport**2))
+ocp.add_objective(ocp.at_tf(10.0*(ye-ye_ref)**2 + 1.0*(sinpsi-sinpsi_ref)**2 + 1.0*(cospsi-cospsi_ref)**2 + 80*(u-u_ref)**2 
+                                + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2))
 #ocp.add_objective(ocp.integral(1*(ye-ye_ref)**2))
 
 # Path constraints
@@ -281,9 +279,9 @@ ocp.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
 # Solve the OCP wrt a parameter value (for the first time)
 # -------------------------------
 # Set initial value for parameters
-obstacle_radius = 0.2
+obstacle_radius = 0.5
 ocp.set_value(X_0, current_X)
-obstacles = vertcat(4,6,6,8,2,8,4,10,100,100,100,100,100,100,100,100)
+obstacles = vertcat(3,6,5,8,1,8,3,10,100,100,100,100,100,100,100,100)
 radius = vertcat(obstacle_radius, obstacle_radius, obstacle_radius, obstacle_radius, 0, 0, 0, 0)
 ocp.set_value(obs_pos, obstacles)
 ocp.set_value(obs_rad, radius)
@@ -385,11 +383,11 @@ fig.tight_layout()
 fig2, ax3 = plt.subplots()
 ax3.plot(y_history, x_history, 'r-')
 ax3.set_xlabel('Y [m]')
-ax3.set_ylabel('X [m]', color='r')
-ax3.tick_params('y', colors='r')
+ax3.set_ylabel('X [m]')
+#ax3.tick_params('y', colors='r')
 #obstacles = vertcat(4,4,6,6,2,6,4,8)
 #radius = vertcat(0.5, 0.5, 0.5, 0.5)
-obstacle_array = np.array([4,6,6,8,2,8,4,10])
+obstacle_array = np.array([3,6,5,8,1,8,3,10])
 for j in range(4):
     c = plt.Circle((obstacle_array[2*j+1],obstacle_array[2*j]),obstacle_radius)
     ax3.add_patch(c)
@@ -397,12 +395,11 @@ for j in range(4):
 fig3, ax4 = plt.subplots()
 ax4.plot(time_sim, Tport_history, 'r-')
 ax4.set_xlabel('Time [s]')
-ax4.set_ylabel('Tport [N]', color='r')
-ax4.tick_params('y', colors='r')
-ax5 = ax4.twinx()
-ax5.plot(time_sim, Tstbd_history, 'b-')
-ax5.set_ylabel('Tstbd [N]', color='b')
-ax5.tick_params('y', colors='b')
+ax4.set_ylabel('Thrust [N]')
+#ax4.tick_params('y', colors='r')
+ax4.plot(time_sim, Tstbd_history, 'b-')
+#ax5.set_ylabel('Tstbd [N]', color='b')
+#ax5.tick_params('y', colors='b')
 fig3.tight_layout()
 
 fig4, ax6 = plt.subplots()
