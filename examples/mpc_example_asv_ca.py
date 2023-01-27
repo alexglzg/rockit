@@ -64,7 +64,7 @@ dt    = Tf/Nhor             # sample time'''
 
 nx    = 12                   # the system is composed of 12 states
 nu    = 2                   # the system has 2 input
-Tf    = 4                   # control horizon [s]
+Tf    = 4                  # control horizon [s]
 Nhor  = 40                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
@@ -143,14 +143,14 @@ ocp.set_initial(u,0.001)
 #F = ocp.control(nu, order=0)
 UTportdot = ocp.control()
 UTstbddot = ocp.control()
-slack1u = ocp.control()
-slack2u = ocp.control()
-slack3u = ocp.control()
-slack4u = ocp.control()
-slack5u = ocp.control()
-slack6u = ocp.control()
-slack7u = ocp.control()
-slack8u = ocp.control()
+# slack1u = ocp.control()
+# slack2u = ocp.control()
+# slack3u = ocp.control()
+# slack4u = ocp.control()
+# slack5u = ocp.control()
+# slack6u = ocp.control()
+# slack7u = ocp.control()
+# slack8u = ocp.control()
 slack1l = ocp.control()
 slack2l = ocp.control()
 slack3l = ocp.control()
@@ -169,9 +169,9 @@ obs_pos = ocp.parameter(16)
 obs_rad = ocp.parameter(8)
 
 # Specify ODE
-Xu = if_else(u > 1.2627, 64.55, -25.0)
-Xuu = if_else(u > 1.2627, -70.92, 0.0)
-Yv = 0.5*(-40*1000*fabs(v))*(1.1+0.0045*(1.01/0.09)-0.1*(0.27/0.09)+0.016*((0.27/0.09)*(0.27/0.09)))
+Xu = -25#if_else(u > 1.2627, 64.55, -25.0)
+Xuu = 0#if_else(u > 1.2627, -70.92, 0.0)
+Yv = 0#0.5*(-40*1000*fabs(v))*(1.1+0.0045*(1.01/0.09)-0.1*(0.27/0.09)+0.016*((0.27/0.09)*(0.27/0.09)))
 Nr = -3#(-0.52)*sqrt(u*u + v*v)
 Tu = Tport + c * Tstbd
 Tr = (Tport - c * Tstbd) * B / 2
@@ -192,9 +192,12 @@ ocp.set_der(dtheta, (-m*L*cos(theta)*sin(theta)*dtheta*dtheta + F*cos(theta)+(mc
 ocp.set_der(psi, r)
 ocp.set_der(sinpsi, (cos(chi)*r))
 ocp.set_der(cospsi, (-sin(chi)*r))
-ocp.set_der(u, ((Tu - (-m + 2 * Y_v_dot)*v - (Y_r_dot + N_v_dot)*r*r - (-Xu*u - Xuu*fabs(u)*u)) / (m - X_u_dot)))
-ocp.set_der(v, ((-(m - X_u_dot)*u*r - (- Yv - Yvv*fabs(v) - Yvr*fabs(r))*v) / (m - Y_v_dot)))
-ocp.set_der(r, ((Tr - (-2*Y_v_dot*u*v - (Y_r_dot + N_v_dot)*r*u + X_u_dot*u*r) - (-Nr*r - Nrv*fabs(v)*r - Nrr*fabs(r)*r)) / (Iz - N_r_dot)))
+ocp.set_der(u, ((Tu - (-m + 2 * Y_v_dot)*v - (Y_r_dot + N_v_dot)*r*r - (-Xu*u)) / (m - X_u_dot)))
+ocp.set_der(v, ((-(m - X_u_dot)*u*r - (- Yv*v)) / (m - Y_v_dot)))
+ocp.set_der(r, ((Tr - (-2*Y_v_dot*u*v - (Y_r_dot + N_v_dot)*r*u + X_u_dot*u*r) - (-Nr*r)) / (Iz - N_r_dot)))
+# ocp.set_der(u, ((Tu - (-m + 2 * Y_v_dot)*v - (Y_r_dot + N_v_dot)*r*r - (-Xu*u - Xuu*fabs(u)*u)) / (m - X_u_dot)))
+# ocp.set_der(v, ((-(m - X_u_dot)*u*r - (- Yv - Yvv*fabs(v) - Yvr*fabs(r))*v) / (m - Y_v_dot)))
+# ocp.set_der(r, ((Tr - (-2*Y_v_dot*u*v - (Y_r_dot + N_v_dot)*r*u + X_u_dot*u*r) - (-Nr*r - Nrv*fabs(v)*r - Nrr*fabs(r)*r)) / (Iz - N_r_dot)))
 ocp.set_der(ye, (-(u*cos(psi) - v*sin(psi))*sin(ak) + (u*sin(psi) + v*cos(psi))*cos(ak)))
 ocp.set_der(ak, 0)
 ocp.set_der(nedx, (u*cos(psi) - v*sin(psi)))
@@ -206,13 +209,13 @@ danger_zone = 0.2
 # Lagrange objective
 #ocp.add_objective(ocp.integral(F*2 + 100*pos**2))
 #ocp.add_objective(ocp.integral(0.5*(ye-ye_ref)**2 + 2.0*(sinpsi-sinpsi_ref)**2 + 2.0*(cospsi-cospsi_ref)**2 + 30*(u-u_ref)**2 + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2))
-ocp.add_objective(ocp.integral(5.0*(ye-ye_ref)**2 + 0.5*(sinpsi-sinpsi_ref)**2 + 0.5*(cospsi-cospsi_ref)**2 + 40*(u-u_ref)**2 
-                                + 0.05*r**2 + 0.0005*Tstbd**2 + 0.0005*Tport**2 + 50*slack1u + 50*slack1l + 50*slack2u + 50*slack2l 
-                                + 50*slack3u + 50*slack3l + 50*slack4u + 50*slack4l + 50*slack5u + 50*slack5l + 50*slack6u + 50*slack6l 
-                                + 50*slack7u + 50*slack7l + 50*slack8u + 50*slack8l))
-'''ocp.add_objective(ocp.integral(0.5*(ye-ye_ref)**2 + 2.0*(sinpsi-sinpsi_ref)**2 + 2.0*(cospsi-cospsi_ref)**2 + 30*(u-u_ref)**2 
-                                + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2 + 50*slack1l + 50*slack2l + 50*slack3l + 50*slack4l 
-                                + 50*slack5l + 50*slack6l + 50*slack7l + 50*slack8l))'''
+# ocp.add_objective(ocp.integral(5.0*(ye-ye_ref)**2 + 0.5*(sinpsi-sinpsi_ref)**2 + 0.5*(cospsi-cospsi0.5*(sinpsi-sinpsi_ref)**2 + 0.5*(cospsi-cospsi_ref)**2_ref)**2 + 40*(u-u_ref)**2 
+#                                 + 0.05*r**2 + 0.0005*Tstbd**2 + 0.0005*Tport**2 + 50*slack1u + 50*slack1l + 50*slack2u + 50*slack2l 
+#                                 + 50*slack3u + 50*slack3l + 50*slack4u + 50*slack4l + 50*slack5u + 50*slack5l + 50*slack6u + 50*slack6l 
+#                                 + 50*slack7u + 50*slack7l + 50*slack8u + 50*slack8l))
+ocp.add_objective(ocp.integral(5.0*(ye-ye_ref)**2 + 1*(sinpsi-sinpsi_ref)**2 + 1*(cospsi-cospsi_ref)**2 + 40*(u-u_ref)**2 
+                                + 0.5*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2 + 50*slack1l + 50*slack2l + 50*slack3l + 50*slack4l 
+                                + 50*slack5l + 50*slack6l + 50*slack7l + 50*slack8l))
 ocp.add_objective(ocp.at_tf(10.0*(ye-ye_ref)**2 + 1.0*(sinpsi-sinpsi_ref)**2 + 1.0*(cospsi-cospsi_ref)**2 + 80*(u-u_ref)**2 
                                 + 0.1*r**2 + 0.001*Tstbd**2 + 0.001*Tport**2))
 #ocp.add_objective(ocp.integral(1*(ye-ye_ref)**2))
@@ -228,38 +231,38 @@ ocp.subject_to( (-30.0 <= Tport) <= 36.5 )
 ocp.subject_to( (-30.0 <= Tstbd) <= 36.5 )
 ocp.subject_to( (-90.0 <= UTportdot) <= 90.0 )
 ocp.subject_to( (-90.0 <= UTstbddot) <= 90.0 )
-ocp.subject_to( obs_rad[0] <= (distance1 + slack1l) )
-ocp.subject_to( obs_rad[1] <= (distance2 + slack2l) )
-ocp.subject_to( obs_rad[2] <= (distance3 + slack3l) )
-ocp.subject_to( obs_rad[3] <= (distance4 + slack4l) )
-ocp.subject_to( obs_rad[4] <= (distance5 + slack5l) )
-ocp.subject_to( obs_rad[5] <= (distance6 + slack6l) )
-ocp.subject_to( obs_rad[6] <= (distance7 + slack7l) )
-ocp.subject_to( obs_rad[7] <= (distance8 + slack8l) )
-ocp.subject_to( (distance1 - slack1u) <=  1000000 )
-ocp.subject_to( (distance2 - slack2u) <=  1000000 )
-ocp.subject_to( (distance3 - slack3u) <=  1000000 )
-ocp.subject_to( (distance4 - slack4u) <=  1000000 )
-ocp.subject_to( (distance5 - slack5u) <=  1000000 )
-ocp.subject_to( (distance6 - slack6u) <=  1000000 )
-ocp.subject_to( (distance7 - slack7u) <=  1000000 )
-ocp.subject_to( (distance8 - slack8u) <=  1000000 )
-ocp.subject_to( slack1l >= -danger_zone )
-ocp.subject_to( slack2l >= -danger_zone )
-ocp.subject_to( slack3l >= -danger_zone )
-ocp.subject_to( slack4l >= -danger_zone )
-ocp.subject_to( slack5l >= -danger_zone )
-ocp.subject_to( slack6l >= -danger_zone )
-ocp.subject_to( slack7l >= -danger_zone )
-ocp.subject_to( slack8l >= -danger_zone )
-ocp.subject_to( slack1u >= 0 )
-ocp.subject_to( slack2u >= 0 )
-ocp.subject_to( slack3u >= 0 )
-ocp.subject_to( slack4u >= 0 )
-ocp.subject_to( slack5u >= 0 )
-ocp.subject_to( slack6u >= 0 )
-ocp.subject_to( slack7u >= 0 )
-ocp.subject_to( slack8u >= 0 )
+ocp.subject_to( obs_rad[0] - slack1l <= (distance1 ) )
+ocp.subject_to( obs_rad[1] - slack2l <= (distance2 ) )
+ocp.subject_to( obs_rad[2] - slack3l <= (distance3 ) )
+ocp.subject_to( obs_rad[3] - slack4l <= (distance4 ) )
+ocp.subject_to( obs_rad[4] - slack5l <= (distance5 ) )
+ocp.subject_to( obs_rad[5] - slack6l <= (distance6 ) )
+ocp.subject_to( obs_rad[6] - slack7l <= (distance7 ) )
+ocp.subject_to( obs_rad[7] - slack8l <= (distance8 ) )
+# ocp.subject_to( (distance1 - slack1u) <=  1000000 )
+# ocp.subject_to( (distance2 - slack2u) <=  1000000 )
+# ocp.subject_to( (distance3 - slack3u) <=  1000000 )
+# ocp.subject_to( (distance4 - slack4u) <=  1000000 )
+# ocp.subject_to( (distance5 - slack5u) <=  1000000 )
+# ocp.subject_to( (distance6 - slack6u) <=  1000000 )
+# ocp.subject_to( (distance7 - slack7u) <=  1000000 )
+# ocp.subject_to( (distance8 - slack8u) <=  1000000 )
+ocp.subject_to( 0 <= (slack1l <= danger_zone) )
+ocp.subject_to( 0 <= (slack2l <= danger_zone) )
+ocp.subject_to( 0 <= (slack3l <= danger_zone) )
+ocp.subject_to( 0 <= (slack4l <= danger_zone) )
+ocp.subject_to( 0 <= (slack5l <= danger_zone) )
+ocp.subject_to( 0 <= (slack6l <= danger_zone) )
+ocp.subject_to( 0 <= (slack7l <= danger_zone) )
+ocp.subject_to( 0 <= (slack8l <= danger_zone) )
+# ocp.subject_to( slack1u >= 0 )
+# ocp.subject_to( slack2u >= 0 )
+# ocp.subject_to( slack3u >= 0 )
+# ocp.subject_to( slack4u >= 0 )
+# ocp.subject_to( slack5u >= 0 )
+# ocp.subject_to( slack6u >= 0 )
+# ocp.subject_to( slack7u >= 0 )
+# ocp.subject_to( slack8u >= 0 )
 
 # Initial constraints
 X = vertcat(psi, sinpsi, cospsi, u, v, r, ye, ak, nedx, nedy, Tport, Tstbd)
@@ -267,7 +270,7 @@ ocp.subject_to(ocp.at_t0(X)==X_0)
 #ocp.subject_to(ocp.at_tf(X)==final_X)
 
 # Pick a solution method
-options = {"ipopt": {"print_level": 1}}
+options = {"ipopt": {"print_level": 1, "tol": 1e-3}}
 options["expand"] = True
 options["print_time"] = False
 ocp.solver('ipopt',options)
@@ -279,7 +282,7 @@ ocp.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
 # Solve the OCP wrt a parameter value (for the first time)
 # -------------------------------
 # Set initial value for parameters
-obstacle_radius = 0.5
+obstacle_radius = 0.7
 ocp.set_value(X_0, current_X)
 obstacles = vertcat(3,6,5,8,1,8,3,10,100,100,100,100,100,100,100,100)
 radius = vertcat(obstacle_radius, obstacle_radius, obstacle_radius, obstacle_radius, 0, 0, 0, 0)
@@ -312,14 +315,14 @@ for i in range(Nsim):
     #tsa, Fsol = sol.sample(F, grid='control')
     tsa, Tpsol = sol.sample(UTportdot, grid='control')
     _, Tssol = sol.sample(UTstbddot, grid='control')
-    _, S1usol = sol.sample(slack1u, grid='control')
-    _, S2usol = sol.sample(slack2u, grid='control')
-    _, S3usol = sol.sample(slack3u, grid='control')
-    _, S4usol = sol.sample(slack4u, grid='control')
-    _, S5usol = sol.sample(slack5u, grid='control')
-    _, S6usol = sol.sample(slack6u, grid='control')
-    _, S7usol = sol.sample(slack7u, grid='control')
-    _, S8usol = sol.sample(slack8u, grid='control')
+    # _, S1usol = sol.sample(slack1u, grid='control')
+    # _, S2usol = sol.sample(slack2u, grid='control')
+    # _, S3usol = sol.sample(slack3u, grid='control')
+    # _, S4usol = sol.sample(slack4u, grid='control')
+    # _, S5usol = sol.sample(slack5u, grid='control')
+    # _, S6usol = sol.sample(slack6u, grid='control')
+    # _, S7usol = sol.sample(slack7u, grid='control')
+    # _, S8usol = sol.sample(slack8u, grid='control')
     _, S1lsol = sol.sample(slack1l, grid='control')
     _, S2lsol = sol.sample(slack2l, grid='control')
     _, S3lsol = sol.sample(slack3l, grid='control')
@@ -331,9 +334,9 @@ for i in range(Nsim):
     # print(S4 sol)
     # Simulate dynamics (applying the first control input) and update the current state
     #current_X = Sim_pendulum_dyn(x0=current_X, u=Fsol[0], T=dt)["xf"]
-    current_X = Sim_asv_dyn(x0=current_X, u=vertcat(Tpsol[0],Tssol[0],S1usol[0],S2usol[0],S3usol[0],S4usol[0],S5usol[0],S6usol[0],S7usol[0],S8usol[0],
-                                                    S1lsol[0],S2lsol[0],S3lsol[0],S4lsol[0],S5lsol[0],S6lsol[0],S7lsol[0],S8lsol[0]), T=dt)["xf"]
-    #current_X = Sim_asv_dyn(x0=current_X, u=vertcat(Tpsol[0],Tssol[0],S1lsol[0],S2lsol[0],S3lsol[0],S4lsol[0],S5lsol[0],S6lsol[0],S7lsol[0],S8lsol[0]), T=dt)["xf"]
+    # current_X = Sim_asv_dyn(x0=current_X, u=vertcat(Tpsol[0],Tssol[0],S1usol[0],S2usol[0],S3usol[0],S4usol[0],S5usol[0],S6usol[0],S7usol[0],S8usol[0],
+    #                                                 S1lsol[0],S2lsol[0],S3lsol[0],S4lsol[0],S5lsol[0],S6lsol[0],S7lsol[0],S8lsol[0]), T=dt)["xf"]
+    current_X = Sim_asv_dyn(x0=current_X, u=vertcat(Tpsol[0],Tssol[0],S1lsol[0],S2lsol[0],S3lsol[0],S4lsol[0],S5lsol[0],S6lsol[0],S7lsol[0],S8lsol[0]), T=dt)["xf"]
     # Add disturbance at t = 2*Tf
     '''if add_disturbance:
         if i == round(2*Nhor)-1:
