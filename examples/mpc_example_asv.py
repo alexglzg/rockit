@@ -66,7 +66,7 @@ dt    = Tf/Nhor             # sample time'''
 nx    = 14                   # the system is composed of 14 states
 nu    = 2                   # the system has 2 input
 Tf    = 1                   # control horizon [s]
-Nhor  = 100                  # number of control intervals
+Nhor  = 10                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
 starting_angle = 0.00
