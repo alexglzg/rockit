@@ -77,7 +77,7 @@ s_0 = s_0.x
 
 current_X = vertcat(ned_x,ned_y,starting_angle,0,0,0,s_0)  # initial state
 
-Nsim  = int(60 * Nhor / Tf)#200                 # how much samples to simulate
+Nsim  = int(20 * Nhor / Tf)                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables

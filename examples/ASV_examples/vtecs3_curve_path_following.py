@@ -54,7 +54,7 @@ Iz = 4.1
 B = 0.41
 c = 1.0
 
-nx    = 9                   # the system is composed of 7 states
+nx    = 9                   # the system is composed of 9 states
 nu    = 2                   # the system has 2 inputs
 Tf    = 1                   # control horizon [s]
 Nhor  = 20                  # number of control intervals
@@ -82,7 +82,7 @@ s_0 = s_0.x
 
 current_X = vertcat(ned_x,ned_y,starting_angle,0,0,0,0,0,s_0)  # initial state
 
-Nsim  = int(40 * Nhor / Tf)                 # how much samples to simulate
+Nsim  = int(20 * Nhor / Tf)                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
@@ -172,7 +172,7 @@ ocp.subject_to(ocp.at_t0(X)==X_0)
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
 options["expand"] = True
-options["print_time"] = False
+options["print_time"] = True
 ocp.solver('ipopt',options)
 
 # Make it concrete for this ocp

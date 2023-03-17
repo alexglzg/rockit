@@ -36,10 +36,11 @@ from scipy.optimize import minimize
 # -------------------------------
 # Problem parameters
 # -------------------------------
-T1 = 1.0
+Tr = 1.0
+Tu = 3.0
 
 nx    = 7                   # the system is composed of 5 states
-nu    = 1                   # the system has 1 input
+nu    = 2                   # the system has 1 input
 Tf    = 1                   # control horizon [s]
 Nhor  = 20                  # number of control intervals
 dt    = Tf/Nhor             # sample time
@@ -47,10 +48,10 @@ dt    = Tf/Nhor             # sample time
 starting_angle = 0.0
 ned_x = 0.0
 ned_y = 0.0
-u_ref = 0.8
+u_ref = 1.0
 
-x_multiplier = 0.2
-y_amplitude = 1.0
+x_multiplier = 0.5
+y_amplitude = 2.5
 y_freq = 3*np.pi/40
 '''def path(s):
     return ((ned_x-x_multiplier*s)**2 + (ned_y-y_amplitude*np.sin(s*y_freq))**2)
@@ -66,17 +67,17 @@ def path_w_args(s_var, xpos, ypos):
     return ((xpos-x_multiplier*s_var)**2 + (ypos-y_amplitude*np.sin(s_var*y_freq))**2)
 s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(ned_x, ned_y), options={'xatol': 1e-8, 'disp': True})
 s_0 = s_0.x
-print(s_0)
 
-current_X = vertcat(ned_x,ned_y,starting_angle,u_ref,0,0,s_0)  # initial state
+current_X = vertcat(ned_x,ned_y,starting_angle,0,0,0,s_0)  # initial state
 
-Nsim  = int(0.15 * Nhor / Tf)#200                 # how much samples to simulate
+Nsim  = int(15 * Nhor / Tf)#200                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
 # -------------------------------
 #ye_history     = np.zeros(Nsim+1)
 r_history   = np.zeros(Nsim+1)
+u_history   = np.zeros(Nsim+1)
 x_history     = np.zeros(Nsim+1)
 y_history   = np.zeros(Nsim+1)
 xd_history     = np.zeros(Nsim+1)
@@ -97,6 +98,7 @@ s = ocp.state()
 
 # Defince controls
 Urdot = ocp.control()
+Uudot = ocp.control()
 
 # Define parameter
 X_0 = ocp.parameter(nx)
@@ -111,23 +113,26 @@ ye = -(nedx-x_d)*sin(gamma_p)+(nedy-y_d)*cos(gamma_p)
 ocp.set_der(nedx, (u*cos(psi) - v*sin(psi)))
 ocp.set_der(nedy, (u*sin(psi) + v*cos(psi)))
 ocp.set_der(psi, r)
-ocp.set_der(u, 0)
+ocp.set_der(u, Uudot)
 ocp.set_der(v, 0)
 ocp.set_der(r, Urdot)
 ocp.set_der(s, u)
 
-Qye = 50.05
+Qye = 50.0
 Qr = 0.025
+Qu = 5.0
 R = 0.005
-QNye = 50.1
-QNr = 0.05
+#QNye = 50.1
+#QNr = 0.05
 
 # Lagrange objective
-ocp.add_objective(ocp.sum(Qye*(ye**2) + Qr*(r**2) + R*(Urdot**2)))
-ocp.add_objective(ocp.at_tf(QNye*(ye**2) + QNr*(r**2)))
+ocp.add_objective(ocp.integral(Qye*(ye**2) + Qr*(r**2) + Qu*((u-u_ref)**2) + R*(Urdot**2)))
+ocp.add_objective(ocp.at_tf(Qye*(ye**2) + Qr*(r**2) + Qu*((u-u_ref)**2)))
 
 # Path constraints
+u_max = 1.5
 r_max = 5.0
+ocp.subject_to( (-u_max <= u) <= u_max )
 ocp.subject_to( (-r_max <= r) <= r_max )
 ocp.subject_to( s >= 0)
 
@@ -157,6 +162,7 @@ Sim_asv_dyn = ocp._method.discrete_system(ocp)
 
 # Log data for post-processing
 r_history[0]   = current_X[5]
+u_history[0]   = current_X[3]
 x_history[0] = current_X[0]
 y_history[0] = current_X[1]
 xd_history[0]   = desired_x(s_0)
@@ -169,12 +175,10 @@ yd_history[0] = desired_y(s_0)
 for i in range(Nsim):
     print("timestep", i+1, "of", Nsim)
     # Get the solution from sol
-    tsa, Usol = sol.sample(Urdot, grid='control')
+    tsa, Ursol = sol.sample(Urdot, grid='control')
+    _, Uusol = sol.sample(Uudot, grid='control')
     # Simulate dynamics (applying the first control input) and update the current state
-    current_X = Sim_asv_dyn(x0=current_X, u=Usol[0], T=dt)["xf"]
-    print(Usol)
-    print(Usol[0])
-    print(current_X[:6])
+    current_X = Sim_asv_dyn(x0=current_X, u=vertcat(Ursol[0],Uusol[0]), T=dt)["xf"]
     # Compute new starting s0
     s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(current_X[0], current_X[1]), options={'xatol': 1e-8, 'disp': True})
     s_0 = s_0.x
@@ -183,11 +187,12 @@ for i in range(Nsim):
     #ocp.set_value(X_0, current_X[:7])
     # Solve the optimization problem
     sol = ocp.solve()
-    #ocp._method.opti.set_initial(ocp._method.opti.x, ocp._method.opti.value(ocp._method.opti.x))
+    ocp._method.opti.set_initial(ocp._method.opti.x, ocp._method.opti.value(ocp._method.opti.x))
 
     # Log data for post-processing
     x_history[i+1]   = current_X[0].full()
     y_history[i+1] = current_X[1].full()
+    u_history[i+1] = current_X[3].full()
     r_history[i+1] = current_X[5].full()
     xd_history[i+1]   = desired_x(s_0)
     yd_history[i+1] = desired_y(s_0)
@@ -199,9 +204,14 @@ for i in range(Nsim):
 time_sim = np.linspace(0, dt*Nsim, Nsim+1)
 
 fig, ax1 = plt.subplots()
-ax1.plot(time_sim, r_history, 'b-')
+ax1.plot(time_sim, u_history, 'r-')
 ax1.set_xlabel('Time [s]')
-ax1.set_ylabel('Angular velocity [rad/s]')
+ax1.set_ylabel('Surge speed [m/s]', color='r')
+ax1.tick_params('y', colors='r')
+ax2 = ax1.twinx()
+ax2.plot(time_sim, r_history, 'b-')
+ax2.set_ylabel('Angular velocity [rad/s]', color='b')
+ax2.tick_params('y', colors='b')
 fig.tight_layout()
 
 fig2, ax3 = plt.subplots()

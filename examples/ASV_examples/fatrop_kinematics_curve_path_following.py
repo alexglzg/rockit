@@ -41,7 +41,7 @@ T1 = 1.0
 nx    = 7                   # the system is composed of 5 states
 nu    = 1                   # the system has 1 input
 Tf    = 1                   # control horizon [s]
-Nhor  = 20                  # number of control intervals
+Nhor  = 100                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
 starting_angle = 0.0
@@ -70,7 +70,7 @@ print(s_0)
 
 current_X = vertcat(ned_x,ned_y,starting_angle,u_ref,0,0,s_0)  # initial state
 
-Nsim  = int(0.15 * Nhor / Tf)#200                 # how much samples to simulate
+Nsim  = int(15 * Nhor / Tf)#200                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
@@ -135,6 +135,8 @@ ocp.subject_to( s >= 0)
 X = vertcat(nedx,nedy,psi,u,v,r,s)
 ocp.subject_to(ocp.at_t0(X)==X_0)
 
+ocpf = ocp
+
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
 options["expand"] = True
@@ -148,12 +150,18 @@ ocp.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
 # Solve the OCP wrt a parameter value (for the first time)
 # -------------------------------
 # Set initial value for parameters
-ocp.set_value(X_0, current_X)
+#ocp.set_value(X_0, current_X)
 # Solve
-sol = ocp.solve()
+#sol = ocp.solve()
 
 # Get discretisd dynamics as CasADi function
 Sim_asv_dyn = ocp._method.discrete_system(ocp)
+
+method = external_method('fatrop',N=Nhor, intg='rk')
+ocpf.method(method)
+ocpf.set_value(X_0, current_X)
+# Solve
+sol = ocpf.solve()
 
 # Log data for post-processing
 r_history[0]   = current_X[5]
@@ -172,17 +180,15 @@ for i in range(Nsim):
     tsa, Usol = sol.sample(Urdot, grid='control')
     # Simulate dynamics (applying the first control input) and update the current state
     current_X = Sim_asv_dyn(x0=current_X, u=Usol[0], T=dt)["xf"]
-    print(Usol)
-    print(Usol[0])
-    print(current_X[:6])
     # Compute new starting s0
     s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(current_X[0], current_X[1]), options={'xatol': 1e-8, 'disp': True})
     s_0 = s_0.x
     # Set the parameter X0 to the new current_X
-    ocp.set_value(X_0, vertcat(current_X[:6],s_0))
+    #ocpf.method(method)
+    ocpf.set_value(X_0, vertcat(current_X[:6],s_0))
     #ocp.set_value(X_0, current_X[:7])
     # Solve the optimization problem
-    sol = ocp.solve()
+    sol = ocpf.solve()
     #ocp._method.opti.set_initial(ocp._method.opti.x, ocp._method.opti.value(ocp._method.opti.x))
 
     # Log data for post-processing
