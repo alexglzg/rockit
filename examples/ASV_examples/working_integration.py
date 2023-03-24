@@ -47,30 +47,32 @@ dt    = Tf/Nhor             # sample time
 starting_angle = 0.0
 ned_x = 0.0
 ned_y = 0.0
-u_ref = 0.5
+u_ref = 0.8
 
-x_multiplier = 1.0
-y_amplitude = 3.0
-y_freq = 3*np.pi/40
+y_multiplier = -1.0
+y_start = 1.0
+x_amplitude = 3.0
+x_start = 1.0
+x_freq = 3*np.pi/40
 '''def path(s):
     return ((ned_x-x_multiplier*s)**2 + (ned_y-y_amplitude*np.sin(s*y_freq))**2)
 res = minimize(path, 0, method='nelder-mead', options={'xatol': 1e-8, 'disp': True})'''
 
-def desired_x(s_var):
-    return x_multiplier*s_var - 0.0
-
 def desired_y(s_var):
-    return y_amplitude*np.sin(s_var*y_freq) + 0.0
+    return y_multiplier*s_var +  y_start
+
+def desired_x(s_var):
+    return x_amplitude*np.sin(s_var*x_freq) + x_start
 
 def path_w_args(s_var, xpos, ypos):
-    return ((xpos-x_multiplier*s_var)**2 + (ypos-y_amplitude*np.sin(s_var*y_freq))**2)
+    return ((ypos-y_multiplier*s_var)**2 + (xpos-x_amplitude*np.sin(s_var*x_freq))**2)
 s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(ned_x, ned_y), options={'xatol': 1e-8, 'disp': True})
 s_0 = s_0.x
 print(s_0)
 
 current_X = vertcat(ned_x,ned_y,starting_angle,u_ref,0,0,s_0)  # initial state
 
-Nsim  = int(20 * Nhor / Tf)#200                 # how much samples to simulate
+Nsim  = int(40 * Nhor / Tf)#200                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
@@ -104,10 +106,10 @@ X_0 = ocp.register_parameter(MX.sym('X_0', nx, 1))
 s_min = ocp.control()
 
 # Specify ODE
-x_d = x_multiplier*s - 0.0
-y_d = y_amplitude*np.sin(s*y_freq) + 0.0
-xdot_d = x_multiplier
-ydot_d = y_amplitude*y_freq*cos((y_freq) * s)
+y_d = y_multiplier*s + y_start
+x_d = x_amplitude*np.sin(s*x_freq) + x_start
+ydot_d = y_multiplier
+xdot_d = x_amplitude*x_freq*cos((x_freq) * s)
 '''x_d = x_multiplier*s_min + 0.0
 y_d = y_amplitude*np.sin(s_min*y_freq) + 0.0
 xdot_d = x_multiplier
@@ -124,12 +126,12 @@ ocp.set_der(r, Urdot)
 ocp.set_der(s, u)
 
 Qye = 25.0
-Qr = 1.0
-Qp = 1.0
+Qr = 5.0
+Qp = 5.0
 R = 0.005
 QNye = 50.0
-QNr = 1.0
-QNp = 1.0
+QNr = 5.0
+QNp = 5.0
 
 # Lagrange objective
 ocp.add_objective(ocp.sum(Qye*(ye**2) + Qp*(sin(psi)-sin(gamma_p))**2 + Qp*(cos(psi)-cos(gamma_p))**2 + Qr*(r**2) + R*(Urdot**2)))
@@ -140,7 +142,7 @@ ocp.add_objective(ocp.at_t0(path_w_args(s_min, nedx, nedy)))
 # Path constraints
 r_max = 0.3
 ocp.subject_to( (-r_max <= r) <= r_max )
-ocp.subject_to( (-5 <= Urdot) <= 5 )
+ocp.subject_to( (-2 <= Urdot) <= 2 )
 ocp.subject_to( s >= 0)
 ocp.subject_to( s_min >= 0)
 
