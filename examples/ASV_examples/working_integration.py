@@ -40,14 +40,14 @@ T1 = 1.0
 
 nx    = 7                   # the system is composed of 5 states
 nu    = 1                   # the system has 1 input
-Tf    = 1                   # control horizon [s]
-Nhor  = 100                  # number of control intervals
+Tf    = 2                   # control horizon [s]
+Nhor  = 200                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
 starting_angle = 0.0
 ned_x = 0.0
 ned_y = 0.0
-u_ref = 0.8
+u_ref = 0.5
 
 y_multiplier = -1.0
 y_start = 1.0
@@ -116,6 +116,8 @@ xdot_d = x_multiplier
 ydot_d = y_amplitude*y_freq*cos((y_freq) * s_min)'''
 gamma_p = atan2(ydot_d, xdot_d)
 ye = -(nedx-x_d)*sin(gamma_p)+(nedy-y_d)*cos(gamma_p)
+beta = atan2(v,u+0.001)
+chi = psi + beta
 #xe = (nedx-x_d)*cos(gamma_p)+(nedy-y_d)*sin(gamma_p)
 ocp.set_der(nedx, (u*cos(psi) - v*sin(psi)))
 ocp.set_der(nedy, (u*sin(psi) + v*cos(psi)))
@@ -134,8 +136,8 @@ QNr = 5.0
 QNp = 5.0
 
 # Lagrange objective
-ocp.add_objective(ocp.sum(Qye*(ye**2) + Qp*(sin(psi)-sin(gamma_p))**2 + Qp*(cos(psi)-cos(gamma_p))**2 + Qr*(r**2) + R*(Urdot**2)))
-ocp.add_objective(ocp.at_tf(QNye*(ye**2) + QNp*(sin(psi)-sin(gamma_p))**2 + QNp*(cos(psi)-cos(gamma_p))**2 + QNr*(r**2)))
+ocp.add_objective(ocp.sum(Qye*(ye**2) + Qp*(sin(chi)-sin(gamma_p))**2 + Qp*(cos(chi)-cos(gamma_p))**2 + Qr*(r**2) + R*(Urdot**2)))
+ocp.add_objective(ocp.at_tf(QNye*(ye**2) + QNp*(sin(chi)-sin(gamma_p))**2 + QNp*(cos(chi)-cos(gamma_p))**2 + QNr*(r**2)))
 ocp.add_objective(ocp.at_t0(path_w_args(s_min, nedx, nedy)))
 
 
@@ -144,7 +146,7 @@ r_max = 0.3
 ocp.subject_to( (-r_max <= r) <= r_max )
 ocp.subject_to( (-2 <= Urdot) <= 2 )
 ocp.subject_to( s >= 0)
-ocp.subject_to( s_min >= 0)
+ocp.subject_to( s_min >= 2)
 
 # Initial constraints
 X = vertcat(nedx,nedy,psi,u,v,r,s)
