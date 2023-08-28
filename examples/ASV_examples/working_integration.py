@@ -38,7 +38,7 @@ from scipy.optimize import minimize
 # -------------------------------
 T1 = 1.0
 
-nx    = 7                   # the system is composed of 5 states
+nx    = 8                   # the system is composed of 5 states
 nu    = 1                   # the system has 1 input
 Tf    = 2                   # control horizon [s]
 Nhor  = 200                  # number of control intervals
@@ -70,7 +70,7 @@ s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(ned_x, ned_y), option
 s_0 = s_0.x
 print(s_0)
 
-current_X = vertcat(ned_x,ned_y,starting_angle,u_ref,0,0,s_0)  # initial state
+current_X = vertcat(ned_x,ned_y,starting_angle,u_ref,0,0,0,s_0)  # initial state
 
 Nsim  = int(40 * Nhor / Tf)#200                 # how much samples to simulate
 
@@ -96,6 +96,7 @@ psi = ocp.register_state(MX.sym('psi', 1))
 u = ocp.register_state(MX.sym('u', 1))
 v = ocp.register_state(MX.sym('v', 1))
 r = ocp.register_state(MX.sym('r', 1))
+r_d = ocp.register_state(MX.sym('r_d', 1))
 s = ocp.register_state(MX.sym('s', 1))
 
 # Defince controls
@@ -125,7 +126,8 @@ ocp.set_der(nedy, (u*sin(psi) + v*cos(psi)))
 ocp.set_der(psi, r)
 ocp.set_der(u, 0)
 ocp.set_der(v, 0)
-ocp.set_der(r, Urdot)
+ocp.set_der(r, r_d-r)
+ocp.set_der(r_d, Urdot)
 ocp.set_der(s, u)
 
 Qye = 25.0
@@ -150,7 +152,7 @@ ocp.subject_to( s >= 0)
 ocp.subject_to( s_min >= 2)
 
 # Initial constraints
-X = vertcat(nedx,nedy,psi,u,v,r,s)
+X = vertcat(nedx,nedy,psi,u,v,r,r_d,s)
 ocp.subject_to(ocp.at_t0(X)==X_0)
 
 ocpf = ocp
@@ -180,6 +182,7 @@ ocpf.method(method)
 
 ocpf._method.add_sampler('Urdot', Urdot)
 ocpf._method.add_sampler('r', r)
+ocpf._method.add_sampler('r_d', r_d)
 ocpf._method.add_sampler('s', s)
 ocpf._method.add_sampler('s_min', s_min)
 ocpf.set_value(X_0, current_X)
@@ -210,7 +213,7 @@ for i in range(Nsim):
     s_0 = s_0[0]
     # Set the parameter X0 to the new current_X
     #ocpf.method(method)
-    ocpf.set_value(X_0, vertcat(current_X[:6],s_0))
+    ocpf.set_value(X_0, vertcat(current_X[:7],s_0))
     #ocp.set_value(X_0, current_X[:7])
     # Solve the optimization problem
     sol = ocpf.solve()
