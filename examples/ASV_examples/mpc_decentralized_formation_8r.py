@@ -32,11 +32,13 @@ from casadi import *
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy.optimize import linear_sum_assignment
+
 # -------------------------------
 # Problem parameters
 # -------------------------------
 max_speed_limit = 0.04
-boat_radius = 0.15**2
+boat_diam = 0.30
 x0_1 = 0.3
 y0_1 = 2.4
 x0_2 = 1.8
@@ -54,28 +56,120 @@ y0_7 = 1.7
 x0_8 = 2.1
 y0_8 = 0.2
 
-xd_1 = 2.32
-yd_1 = 1.18
-xd_2 = 1.68
-yd_2 = 1.18
-xd_3 = 1.68
-yd_3 = 1.50
-xd_4 = 2.00
-yd_4 = 1.18
-xd_5 = 2.00
-yd_5 = 1.82
-xd_6 = 2.32
-yd_6 = 1.50
-xd_7 = 2.32
-yd_7 = 1.82
-xd_8 = 1.68
-yd_8 = 1.82
+number_of_robots = 8
+x_center = 2.0
+y_center = 1.5
+goals_0 = np.array([[x_center + 0.22, y_center - 0.22],[x_center + 0.22,y_center],[x_center + 0.22,y_center + 0.22],[x_center,y_center - 0.22],[x_center,y_center + 0.22],[x_center - 0.22,y_center - 0.22],[x_center - 0.22,y_center],[x_center - 0.22,y_center + 0.22]])
+goals_1 = np.array([[x_center + 0.36,y_center - 0.12],[x_center + 0.36,y_center + 0.12],[x_center + 0.12,y_center - 0.12],[x_center + 0.12,y_center + 0.12],[x_center - 0.12,y_center - 0.12],[x_center - 0.12,y_center + 0.12],[x_center - 0.36,y_center - 0.12],[x_center - 0.36,y_center + 0.12]])
+goals_0b = np.array([[x_center + 0.32, y_center - 0.32],[x_center + 0.32,y_center],[x_center + 0.32,y_center + 0.32],[x_center,y_center - 0.32],[x_center,y_center + 0.32],[x_center - 0.32,y_center - 0.32],[x_center - 0.32,y_center],[x_center - 0.32,y_center + 0.32]])
+goals_1b = np.array([[x_center + 0.56,y_center - 0.32],[x_center + 0.56,y_center + 0.32],[x_center + 0.22,y_center - 0.22],[x_center + 0.22,y_center + 0.22],[x_center - 0.22,y_center - 0.22],[x_center - 0.22,y_center + 0.22],[x_center - 0.56,y_center - 0.32],[x_center - 0.56,y_center + 0.32]])
 
-N_init = 200
+distance_squared_matrix = np.zeros([number_of_robots,number_of_robots])
+assigned_goals = np.zeros([number_of_robots,2])
+miniboat_list = np.zeros([number_of_robots])
+print("Assignment")
+robot_poses = np.array([[x0_1,y0_1],[x0_2,y0_2],[x0_3,y0_3],[x0_4,y0_4],[x0_5,y0_5],[x0_6,y0_6],[x0_7,y0_7],[x0_8,y0_8]])
+goals = goals_1
+
+def compute_distance(x1, y1, x2, y2):
+    xc = x1 - x2
+    yc = y1 - y2
+    distance_to_goal = xc*xc + yc*yc
+    return distance_to_goal
+
+for i in range(number_of_robots):
+    for j in range(number_of_robots):
+        distance_squared_matrix[i,j] = compute_distance(robot_poses[i,0],robot_poses[i,1],goals[j,0],goals[j,1])
+row_ind, col_ind = linear_sum_assignment(distance_squared_matrix)
+for k in range(number_of_robots):
+    ind = col_ind[k]
+    assigned_goals[k] = goals[ind]
+    miniboat_list[ind] = k
+print("Assigned")
+print(miniboat_list + 1)
+print(assigned_goals)
+
+xd_1 = assigned_goals[0,0]
+yd_1 = assigned_goals[0,1]
+xd_2 = assigned_goals[1,0]
+yd_2 = assigned_goals[1,1]
+xd_3 = assigned_goals[2,0]
+yd_3 = assigned_goals[2,1]
+xd_4 = assigned_goals[3,0]
+yd_4 = assigned_goals[3,1]
+xd_5 = assigned_goals[4,0]
+yd_5 = assigned_goals[4,1]
+xd_6 = assigned_goals[5,0]
+yd_6 = assigned_goals[5,1]
+xd_7 = assigned_goals[6,0]
+yd_7 = assigned_goals[6,1]
+xd_8 = assigned_goals[7,0]
+yd_8 = assigned_goals[7,1]
+
+reconfigurate = 1
+if reconfigurate:
+    x0_1 = assigned_goals[0,0]
+    y0_1 = assigned_goals[0,1]
+    x0_2 = assigned_goals[1,0]
+    y0_2 = assigned_goals[1,1]
+    x0_3 = assigned_goals[2,0]
+    y0_3 = assigned_goals[2,1]
+    x0_4 = assigned_goals[3,0]
+    y0_4 = assigned_goals[3,1]
+    x0_5 = assigned_goals[4,0]
+    y0_5 = assigned_goals[4,1]
+    x0_6 = assigned_goals[5,0]
+    y0_6 = assigned_goals[5,1]
+    x0_7 = assigned_goals[6,0]
+    y0_7 = assigned_goals[6,1]
+    x0_8 = assigned_goals[7,0]
+    y0_8 = assigned_goals[7,1]
+    distance_squared_matrix = np.zeros([number_of_robots,number_of_robots])
+    assigned_goals = np.zeros([number_of_robots,2])
+    miniboat_list = np.zeros([number_of_robots])
+    print("Assignment")
+    robot_poses = np.array([[x0_1,y0_1],[x0_2,y0_2],[x0_3,y0_3],[x0_4,y0_4],[x0_5,y0_5],[x0_6,y0_6],[x0_7,y0_7],[x0_8,y0_8]])
+    goals = goals_0
+
+    for i in range(number_of_robots):
+        for j in range(number_of_robots):
+            distance_squared_matrix[i,j] = compute_distance(robot_poses[i,0],robot_poses[i,1],goals[j,0],goals[j,1])
+    row_ind, col_ind = linear_sum_assignment(distance_squared_matrix)
+    for k in range(number_of_robots):
+        ind = col_ind[k]
+        assigned_goals[k] = goals[ind]
+        miniboat_list[ind] = k
+    print("Assigned")
+    print(miniboat_list + 1)
+    print(assigned_goals)
+
+    xd_1 = assigned_goals[0,0]
+    yd_1 = assigned_goals[0,1]
+    xd_2 = assigned_goals[1,0]
+    yd_2 = assigned_goals[1,1]
+    xd_3 = assigned_goals[2,0]
+    yd_3 = assigned_goals[2,1]
+    xd_4 = assigned_goals[3,0]
+    yd_4 = assigned_goals[3,1]
+    xd_5 = assigned_goals[4,0]
+    yd_5 = assigned_goals[4,1]
+    xd_6 = assigned_goals[5,0]
+    yd_6 = assigned_goals[5,1]
+    xd_7 = assigned_goals[6,0]
+    yd_7 = assigned_goals[6,1]
+    xd_8 = assigned_goals[7,0]
+    yd_8 = assigned_goals[7,1]
+
+latch = 1
+if latch:
+    boat_diam = 0.2
+
+
+N_init = 100
 mu = 1
 N_mpc = 1
 
-options = {"ipopt": {"print_level": 1}}
+options = {"ipopt": {"print_level": 5}}
 options["expand"] = True
 options["print_time"] = False
 
@@ -94,7 +188,7 @@ current_X6 = vertcat(x0_6, y0_6)  # initial state
 current_X7 = vertcat(x0_7, y0_7)  # initial state
 current_X8 = vertcat(x0_8, y0_8)  # initial state
 
-Nsim  = int(100 * Nhor / Tf)                 # how much samples to simulate
+Nsim  = int(80 * Nhor / Tf)                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
@@ -309,21 +403,39 @@ if ocpZ1.is_signal(Z1_term8):
     Z1_term8 = ocpZ1.sum(Z1_term8,include_last=True)
 ocpZ1.add_objective(Z1_term8)
 # Constraints
-Z1_distance1  = (z1_x1-z1_x2)**2 + (z1_y1-z1_y2)**2
-Z1_distance2  = (z1_x1-z1_x3)**2 + (z1_y1-z1_y3)**2
-Z1_distance3  = (z1_x1-z1_x4)**2 + (z1_y1-z1_y4)**2
-Z1_distance4  = (z1_x1-z1_x5)**2 + (z1_y1-z1_y5)**2
-Z1_distance5  = (z1_x1-z1_x6)**2 + (z1_y1-z1_y6)**2
-Z1_distance6  = (z1_x1-z1_x7)**2 + (z1_y1-z1_y7)**2
-Z1_distance7  = (z1_x1-z1_x8)**2 + (z1_y1-z1_y8)**2
-ocpZ1.subject_to( Z1_distance1  >= boat_radius )
-ocpZ1.subject_to( Z1_distance2  >= boat_radius )
-ocpZ1.subject_to( Z1_distance3  >= boat_radius )
-ocpZ1.subject_to( Z1_distance4  >= boat_radius )
-ocpZ1.subject_to( Z1_distance5  >= boat_radius )
-ocpZ1.subject_to( Z1_distance6  >= boat_radius )
-ocpZ1.subject_to( Z1_distance7  >= boat_radius )
-# Pick a solution method
+Z1_distance1  = sqrt((z1_x1-z1_x2)**2 + (z1_y1-z1_y2)**2)
+Z1_distance2  = sqrt((z1_x1-z1_x3)**2 + (z1_y1-z1_y3)**2)
+Z1_distance3  = sqrt((z1_x1-z1_x4)**2 + (z1_y1-z1_y4)**2)
+Z1_distance4  = sqrt((z1_x1-z1_x5)**2 + (z1_y1-z1_y5)**2)
+Z1_distance5  = sqrt((z1_x1-z1_x6)**2 + (z1_y1-z1_y6)**2)
+Z1_distance6  = sqrt((z1_x1-z1_x7)**2 + (z1_y1-z1_y7)**2)
+Z1_distance7  = sqrt((z1_x1-z1_x8)**2 + (z1_y1-z1_y8)**2)
+ocpZ1.subject_to( Z1_distance1  >= boat_diam )
+ocpZ1.subject_to( Z1_distance2  >= boat_diam )
+ocpZ1.subject_to( Z1_distance3  >= boat_diam )
+ocpZ1.subject_to( Z1_distance4  >= boat_diam )
+ocpZ1.subject_to( Z1_distance5  >= boat_diam )
+ocpZ1.subject_to( Z1_distance6  >= boat_diam )
+ocpZ1.subject_to( Z1_distance7  >= boat_diam )
+""" # Initial condition
+Z1_0_Z1 = ocpZ1.parameter(nx)
+Z1_0_Z2 = ocpZ1.parameter(nx)
+Z1_0_Z3 = ocpZ1.parameter(nx)
+Z1_0_Z4 = ocpZ1.parameter(nx)
+Z1_0_Z5 = ocpZ1.parameter(nx)
+Z1_0_Z6 = ocpZ1.parameter(nx)
+Z1_0_Z7 = ocpZ1.parameter(nx)
+Z1_0_Z8 = ocpZ1.parameter(nx)
+# Initial constraints
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_11)==Z1_0_Z1)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_12)==Z1_0_Z2)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_13)==Z1_0_Z3)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_14)==Z1_0_Z4)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_15)==Z1_0_Z5)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_16)==Z1_0_Z6)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_17)==Z1_0_Z7)
+ocpZ1.subject_to(ocpZ1.at_t0(Z1_Z_18)==Z1_0_Z8)
+ """# Pick a solution method
 ocpZ1.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ1.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -517,21 +629,39 @@ if ocpZ2.is_signal(Z2_term8):
     Z2_term8 = ocpZ2.sum(Z2_term8,include_last=True)
 ocpZ2.add_objective(Z2_term8)
 # Constraints
-Z2_distance1  = (z2_x2-z2_x1)**2 + (z2_y2-z2_y1)**2
-Z2_distance2  = (z2_x2-z2_x3)**2 + (z2_y2-z2_y3)**2
-Z2_distance3  = (z2_x2-z2_x4)**2 + (z2_y2-z2_y4)**2
-Z2_distance4  = (z2_x2-z2_x5)**2 + (z2_y2-z2_y5)**2
-Z2_distance5  = (z2_x2-z2_x6)**2 + (z2_y2-z2_y6)**2
-Z2_distance6  = (z2_x2-z2_x7)**2 + (z2_y2-z2_y7)**2
-Z2_distance7  = (z2_x2-z2_x8)**2 + (z2_y2-z2_y8)**2
-ocpZ2.subject_to( Z2_distance1  >= boat_radius )
-ocpZ2.subject_to( Z2_distance2  >= boat_radius )
-ocpZ2.subject_to( Z2_distance3  >= boat_radius )
-ocpZ2.subject_to( Z2_distance4  >= boat_radius )
-ocpZ2.subject_to( Z2_distance5  >= boat_radius )
-ocpZ2.subject_to( Z2_distance6  >= boat_radius )
-ocpZ2.subject_to( Z2_distance7  >= boat_radius )
-# Pick a solution method
+Z2_distance1  = sqrt((z2_x2-z2_x1)**2 + (z2_y2-z2_y1)**2)
+Z2_distance2  = sqrt((z2_x2-z2_x3)**2 + (z2_y2-z2_y3)**2)
+Z2_distance3  = sqrt((z2_x2-z2_x4)**2 + (z2_y2-z2_y4)**2)
+Z2_distance4  = sqrt((z2_x2-z2_x5)**2 + (z2_y2-z2_y5)**2)
+Z2_distance5  = sqrt((z2_x2-z2_x6)**2 + (z2_y2-z2_y6)**2)
+Z2_distance6  = sqrt((z2_x2-z2_x7)**2 + (z2_y2-z2_y7)**2)
+Z2_distance7  = sqrt((z2_x2-z2_x8)**2 + (z2_y2-z2_y8)**2)
+ocpZ2.subject_to( Z2_distance1  >= boat_diam )
+ocpZ2.subject_to( Z2_distance2  >= boat_diam )
+ocpZ2.subject_to( Z2_distance3  >= boat_diam )
+ocpZ2.subject_to( Z2_distance4  >= boat_diam )
+ocpZ2.subject_to( Z2_distance5  >= boat_diam )
+ocpZ2.subject_to( Z2_distance6  >= boat_diam )
+ocpZ2.subject_to( Z2_distance7  >= boat_diam )
+""" # Initial condition
+Z2_0_Z1 = ocpZ2.parameter(nx)
+Z2_0_Z2 = ocpZ2.parameter(nx)
+Z2_0_Z3 = ocpZ2.parameter(nx)
+Z2_0_Z4 = ocpZ2.parameter(nx)
+Z2_0_Z5 = ocpZ2.parameter(nx)
+Z2_0_Z6 = ocpZ2.parameter(nx)
+Z2_0_Z7 = ocpZ2.parameter(nx)
+Z2_0_Z8 = ocpZ2.parameter(nx)
+# Initial constraints
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_21)==Z2_0_Z1)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_22)==Z2_0_Z2)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_23)==Z2_0_Z3)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_24)==Z2_0_Z4)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_25)==Z2_0_Z5)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_26)==Z2_0_Z6)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_27)==Z2_0_Z7)
+ocpZ2.subject_to(ocpZ2.at_t0(Z2_Z_28)==Z2_0_Z8)
+ """# Pick a solution method
 ocpZ2.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ2.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -725,21 +855,39 @@ if ocpZ3.is_signal(Z3_term8):
     Z3_term8 = ocpZ3.sum(Z3_term8,include_last=True)
 ocpZ3.add_objective(Z3_term8)
 # Constraints
-Z3_distance1  = (z3_x3-z3_x1)**2 + (z3_y3-z3_y1)**2
-Z3_distance2  = (z3_x3-z3_x2)**2 + (z3_y3-z3_y2)**2
-Z3_distance3  = (z3_x3-z3_x4)**2 + (z3_y3-z3_y4)**2
-Z3_distance4  = (z3_x3-z3_x5)**2 + (z3_y3-z3_y5)**2
-Z3_distance5  = (z3_x3-z3_x6)**2 + (z3_y3-z3_y6)**2
-Z3_distance6  = (z3_x3-z3_x7)**2 + (z3_y3-z3_y7)**2
-Z3_distance7  = (z3_x3-z3_x8)**2 + (z3_y3-z3_y8)**2
-ocpZ3.subject_to( Z3_distance1  >= boat_radius )
-ocpZ3.subject_to( Z3_distance2  >= boat_radius )
-ocpZ3.subject_to( Z3_distance3  >= boat_radius )
-ocpZ3.subject_to( Z3_distance4  >= boat_radius )
-ocpZ3.subject_to( Z3_distance5  >= boat_radius )
-ocpZ3.subject_to( Z3_distance6  >= boat_radius )
-ocpZ3.subject_to( Z3_distance7  >= boat_radius )
-# Pick a solution method
+Z3_distance1  = sqrt((z3_x3-z3_x1)**2 + (z3_y3-z3_y1)**2)
+Z3_distance2  = sqrt((z3_x3-z3_x2)**2 + (z3_y3-z3_y2)**2)
+Z3_distance3  = sqrt((z3_x3-z3_x4)**2 + (z3_y3-z3_y4)**2)
+Z3_distance4  = sqrt((z3_x3-z3_x5)**2 + (z3_y3-z3_y5)**2)
+Z3_distance5  = sqrt((z3_x3-z3_x6)**2 + (z3_y3-z3_y6)**2)
+Z3_distance6  = sqrt((z3_x3-z3_x7)**2 + (z3_y3-z3_y7)**2)
+Z3_distance7  = sqrt((z3_x3-z3_x8)**2 + (z3_y3-z3_y8)**2)
+ocpZ3.subject_to( Z3_distance1  >= boat_diam )
+ocpZ3.subject_to( Z3_distance2  >= boat_diam )
+ocpZ3.subject_to( Z3_distance3  >= boat_diam )
+ocpZ3.subject_to( Z3_distance4  >= boat_diam )
+ocpZ3.subject_to( Z3_distance5  >= boat_diam )
+ocpZ3.subject_to( Z3_distance6  >= boat_diam )
+ocpZ3.subject_to( Z3_distance7  >= boat_diam )
+""" # Initial condition
+Z3_0_Z1 = ocpZ3.parameter(nx)
+Z3_0_Z2 = ocpZ3.parameter(nx)
+Z3_0_Z3 = ocpZ3.parameter(nx)
+Z3_0_Z4 = ocpZ3.parameter(nx)
+Z3_0_Z5 = ocpZ3.parameter(nx)
+Z3_0_Z6 = ocpZ3.parameter(nx)
+Z3_0_Z7 = ocpZ3.parameter(nx)
+Z3_0_Z8 = ocpZ3.parameter(nx)
+# Initial constraints
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_31)==Z3_0_Z1)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_32)==Z3_0_Z2)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_33)==Z3_0_Z3)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_34)==Z3_0_Z4)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_35)==Z3_0_Z5)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_36)==Z3_0_Z6)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_37)==Z3_0_Z7)
+ocpZ3.subject_to(ocpZ3.at_t0(Z3_Z_38)==Z3_0_Z8)
+ """# Pick a solution method
 ocpZ3.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ3.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -933,21 +1081,39 @@ if ocpZ4.is_signal(Z4_term8):
     Z4_term8 = ocpZ4.sum(Z4_term8,include_last=True)
 ocpZ4.add_objective(Z4_term8)
 # Constraints
-Z4_distance1  = (z4_x4-z4_x1)**2 + (z4_y4-z4_y1)**2
-Z4_distance2  = (z4_x4-z4_x2)**2 + (z4_y4-z4_y2)**2
-Z4_distance3  = (z4_x4-z4_x3)**2 + (z4_y4-z4_y3)**2
-Z4_distance4  = (z4_x4-z4_x5)**2 + (z4_y4-z4_y5)**2
-Z4_distance5  = (z4_x4-z4_x6)**2 + (z4_y4-z4_y6)**2
-Z4_distance6  = (z4_x4-z4_x7)**2 + (z4_y4-z4_y7)**2
-Z4_distance7  = (z4_x4-z4_x8)**2 + (z4_y4-z4_y8)**2
-ocpZ4.subject_to( Z4_distance1  >= boat_radius )
-ocpZ4.subject_to( Z4_distance2  >= boat_radius )
-ocpZ4.subject_to( Z4_distance3  >= boat_radius )
-ocpZ4.subject_to( Z4_distance4  >= boat_radius )
-ocpZ4.subject_to( Z4_distance5  >= boat_radius )
-ocpZ4.subject_to( Z4_distance6  >= boat_radius )
-ocpZ4.subject_to( Z4_distance7  >= boat_radius )
-# Pick a solution method
+Z4_distance1  = sqrt((z4_x4-z4_x1)**2 + (z4_y4-z4_y1)**2)
+Z4_distance2  = sqrt((z4_x4-z4_x2)**2 + (z4_y4-z4_y2)**2)
+Z4_distance3  = sqrt((z4_x4-z4_x3)**2 + (z4_y4-z4_y3)**2)
+Z4_distance4  = sqrt((z4_x4-z4_x5)**2 + (z4_y4-z4_y5)**2)
+Z4_distance5  = sqrt((z4_x4-z4_x6)**2 + (z4_y4-z4_y6)**2)
+Z4_distance6  = sqrt((z4_x4-z4_x7)**2 + (z4_y4-z4_y7)**2)
+Z4_distance7  = sqrt((z4_x4-z4_x8)**2 + (z4_y4-z4_y8)**2)
+ocpZ4.subject_to( Z4_distance1  >= boat_diam )
+ocpZ4.subject_to( Z4_distance2  >= boat_diam )
+ocpZ4.subject_to( Z4_distance3  >= boat_diam )
+ocpZ4.subject_to( Z4_distance4  >= boat_diam )
+ocpZ4.subject_to( Z4_distance5  >= boat_diam )
+ocpZ4.subject_to( Z4_distance6  >= boat_diam )
+ocpZ4.subject_to( Z4_distance7  >= boat_diam )
+""" # Initial condition
+Z4_0_Z1 = ocpZ4.parameter(nx)
+Z4_0_Z2 = ocpZ4.parameter(nx)
+Z4_0_Z3 = ocpZ4.parameter(nx)
+Z4_0_Z4 = ocpZ4.parameter(nx)
+Z4_0_Z5 = ocpZ4.parameter(nx)
+Z4_0_Z6 = ocpZ4.parameter(nx)
+Z4_0_Z7 = ocpZ4.parameter(nx)
+Z4_0_Z8 = ocpZ4.parameter(nx)
+# Initial constraints
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_41)==Z4_0_Z1)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_42)==Z4_0_Z2)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_43)==Z4_0_Z3)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_44)==Z4_0_Z4)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_45)==Z4_0_Z5)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_46)==Z4_0_Z6)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_47)==Z4_0_Z7)
+ocpZ4.subject_to(ocpZ4.at_t0(Z4_Z_48)==Z4_0_Z8)
+ """# Pick a solution method
 ocpZ4.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ4.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -1141,21 +1307,39 @@ if ocpZ5.is_signal(Z5_term8):
     Z5_term8 = ocpZ5.sum(Z5_term8,include_last=True)
 ocpZ5.add_objective(Z5_term8)
 # Constraints
-Z5_distance1  = (z5_x5-z5_x1)**2 + (z5_y5-z5_y1)**2
-Z5_distance2  = (z5_x5-z5_x2)**2 + (z5_y5-z5_y2)**2
-Z5_distance3  = (z5_x5-z5_x3)**2 + (z5_y5-z5_y3)**2
-Z5_distance4  = (z5_x5-z5_x4)**2 + (z5_y5-z5_y4)**2
-Z5_distance5  = (z5_x5-z5_x6)**2 + (z5_y5-z5_y6)**2
-Z5_distance6  = (z5_x5-z5_x7)**2 + (z5_y5-z5_y7)**2
-Z5_distance7  = (z5_x5-z5_x8)**2 + (z5_y5-z5_y8)**2
-ocpZ5.subject_to( Z5_distance1  >= boat_radius )
-ocpZ5.subject_to( Z5_distance2  >= boat_radius )
-ocpZ5.subject_to( Z5_distance3  >= boat_radius )
-ocpZ5.subject_to( Z5_distance4  >= boat_radius )
-ocpZ5.subject_to( Z5_distance5  >= boat_radius )
-ocpZ5.subject_to( Z5_distance6  >= boat_radius )
-ocpZ5.subject_to( Z5_distance7  >= boat_radius )
-# Pick a solution method
+Z5_distance1  = sqrt((z5_x5-z5_x1)**2 + (z5_y5-z5_y1)**2)
+Z5_distance2  = sqrt((z5_x5-z5_x2)**2 + (z5_y5-z5_y2)**2)
+Z5_distance3  = sqrt((z5_x5-z5_x3)**2 + (z5_y5-z5_y3)**2)
+Z5_distance4  = sqrt((z5_x5-z5_x4)**2 + (z5_y5-z5_y4)**2)
+Z5_distance5  = sqrt((z5_x5-z5_x6)**2 + (z5_y5-z5_y6)**2)
+Z5_distance6  = sqrt((z5_x5-z5_x7)**2 + (z5_y5-z5_y7)**2)
+Z5_distance7  = sqrt((z5_x5-z5_x8)**2 + (z5_y5-z5_y8)**2)
+ocpZ5.subject_to( Z5_distance1  >= boat_diam )
+ocpZ5.subject_to( Z5_distance2  >= boat_diam )
+ocpZ5.subject_to( Z5_distance3  >= boat_diam )
+ocpZ5.subject_to( Z5_distance4  >= boat_diam )
+ocpZ5.subject_to( Z5_distance5  >= boat_diam )
+ocpZ5.subject_to( Z5_distance6  >= boat_diam )
+ocpZ5.subject_to( Z5_distance7  >= boat_diam )
+""" # Initial condition
+Z5_0_Z1 = ocpZ5.parameter(nx)
+Z5_0_Z2 = ocpZ5.parameter(nx)
+Z5_0_Z3 = ocpZ5.parameter(nx)
+Z5_0_Z4 = ocpZ5.parameter(nx)
+Z5_0_Z5 = ocpZ5.parameter(nx)
+Z5_0_Z6 = ocpZ5.parameter(nx)
+Z5_0_Z7 = ocpZ5.parameter(nx)
+Z5_0_Z8 = ocpZ5.parameter(nx)
+# Initial constraints
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_51)==Z5_0_Z1)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_52)==Z5_0_Z2)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_53)==Z5_0_Z3)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_54)==Z5_0_Z4)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_55)==Z5_0_Z5)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_56)==Z5_0_Z6)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_57)==Z5_0_Z7)
+ocpZ5.subject_to(ocpZ5.at_t0(Z5_Z_58)==Z5_0_Z8)
+ """# Pick a solution method
 ocpZ5.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ5.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -1349,21 +1533,39 @@ if ocpZ6.is_signal(Z6_term8):
     Z6_term8 = ocpZ6.sum(Z6_term8,include_last=True)
 ocpZ6.add_objective(Z6_term8)
 # Constraints
-Z6_distance1  = (z6_x6-z6_x1)**2 + (z6_y6-z6_y1)**2
-Z6_distance2  = (z6_x6-z6_x2)**2 + (z6_y6-z6_y2)**2
-Z6_distance3  = (z6_x6-z6_x3)**2 + (z6_y6-z6_y3)**2
-Z6_distance4  = (z6_x6-z6_x4)**2 + (z6_y6-z6_y4)**2
-Z6_distance5  = (z6_x6-z6_x5)**2 + (z6_y6-z6_y5)**2
-Z6_distance6  = (z6_x6-z6_x7)**2 + (z6_y6-z6_y7)**2
-Z6_distance7  = (z6_x6-z6_x8)**2 + (z6_y6-z6_y8)**2
-ocpZ6.subject_to( Z6_distance1  >= boat_radius )
-ocpZ6.subject_to( Z6_distance2  >= boat_radius )
-ocpZ6.subject_to( Z6_distance3  >= boat_radius )
-ocpZ6.subject_to( Z6_distance4  >= boat_radius )
-ocpZ6.subject_to( Z6_distance5  >= boat_radius )
-ocpZ6.subject_to( Z6_distance6  >= boat_radius )
-ocpZ6.subject_to( Z6_distance7  >= boat_radius )
-# Pick a solution method
+Z6_distance1  = sqrt((z6_x6-z6_x1)**2 + (z6_y6-z6_y1)**2)
+Z6_distance2  = sqrt((z6_x6-z6_x2)**2 + (z6_y6-z6_y2)**2)
+Z6_distance3  = sqrt((z6_x6-z6_x3)**2 + (z6_y6-z6_y3)**2)
+Z6_distance4  = sqrt((z6_x6-z6_x4)**2 + (z6_y6-z6_y4)**2)
+Z6_distance5  = sqrt((z6_x6-z6_x5)**2 + (z6_y6-z6_y5)**2)
+Z6_distance6  = sqrt((z6_x6-z6_x7)**2 + (z6_y6-z6_y7)**2)
+Z6_distance7  = sqrt((z6_x6-z6_x8)**2 + (z6_y6-z6_y8)**2)
+ocpZ6.subject_to( Z6_distance1  >= boat_diam )
+ocpZ6.subject_to( Z6_distance2  >= boat_diam )
+ocpZ6.subject_to( Z6_distance3  >= boat_diam )
+ocpZ6.subject_to( Z6_distance4  >= boat_diam )
+ocpZ6.subject_to( Z6_distance5  >= boat_diam )
+ocpZ6.subject_to( Z6_distance6  >= boat_diam )
+ocpZ6.subject_to( Z6_distance7  >= boat_diam )
+""" # Initial condition
+Z6_0_Z1 = ocpZ6.parameter(nx)
+Z6_0_Z2 = ocpZ6.parameter(nx)
+Z6_0_Z3 = ocpZ6.parameter(nx)
+Z6_0_Z4 = ocpZ6.parameter(nx)
+Z6_0_Z5 = ocpZ6.parameter(nx)
+Z6_0_Z6 = ocpZ6.parameter(nx)
+Z6_0_Z7 = ocpZ6.parameter(nx)
+Z6_0_Z8 = ocpZ6.parameter(nx)
+# Initial constraints
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_61)==Z6_0_Z1)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_62)==Z6_0_Z2)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_63)==Z6_0_Z3)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_64)==Z6_0_Z4)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_65)==Z6_0_Z5)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_66)==Z6_0_Z6)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_67)==Z6_0_Z7)
+ocpZ6.subject_to(ocpZ6.at_t0(Z6_Z_68)==Z6_0_Z8)
+ """# Pick a solution method
 ocpZ6.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ6.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -1557,21 +1759,39 @@ if ocpZ7.is_signal(Z7_term8):
     Z7_term8 = ocpZ7.sum(Z7_term8,include_last=True)
 ocpZ7.add_objective(Z7_term8)
 # Constraints
-Z7_distance1  = (z7_x7-z7_x1)**2 + (z7_y7-z7_y1)**2
-Z7_distance2  = (z7_x7-z7_x2)**2 + (z7_y7-z7_y2)**2
-Z7_distance3  = (z7_x7-z7_x3)**2 + (z7_y7-z7_y3)**2
-Z7_distance4  = (z7_x7-z7_x4)**2 + (z7_y7-z7_y4)**2
-Z7_distance5  = (z7_x7-z7_x5)**2 + (z7_y7-z7_y5)**2
-Z7_distance6  = (z7_x7-z7_x6)**2 + (z7_y7-z7_y6)**2
-Z7_distance7  = (z7_x7-z7_x8)**2 + (z7_y7-z7_y8)**2
-ocpZ7.subject_to( Z7_distance1  >= boat_radius )
-ocpZ7.subject_to( Z7_distance2  >= boat_radius )
-ocpZ7.subject_to( Z7_distance3  >= boat_radius )
-ocpZ7.subject_to( Z7_distance4  >= boat_radius )
-ocpZ7.subject_to( Z7_distance5  >= boat_radius )
-ocpZ7.subject_to( Z7_distance6  >= boat_radius )
-ocpZ7.subject_to( Z7_distance7  >= boat_radius )
-# Pick a solution method
+Z7_distance1  = sqrt((z7_x7-z7_x1)**2 + (z7_y7-z7_y1)**2)
+Z7_distance2  = sqrt((z7_x7-z7_x2)**2 + (z7_y7-z7_y2)**2)
+Z7_distance3  = sqrt((z7_x7-z7_x3)**2 + (z7_y7-z7_y3)**2)
+Z7_distance4  = sqrt((z7_x7-z7_x4)**2 + (z7_y7-z7_y4)**2)
+Z7_distance5  = sqrt((z7_x7-z7_x5)**2 + (z7_y7-z7_y5)**2)
+Z7_distance6  = sqrt((z7_x7-z7_x6)**2 + (z7_y7-z7_y6)**2)
+Z7_distance7  = sqrt((z7_x7-z7_x8)**2 + (z7_y7-z7_y8)**2)
+ocpZ7.subject_to( Z7_distance1  >= boat_diam )
+ocpZ7.subject_to( Z7_distance2  >= boat_diam )
+ocpZ7.subject_to( Z7_distance3  >= boat_diam )
+ocpZ7.subject_to( Z7_distance4  >= boat_diam )
+ocpZ7.subject_to( Z7_distance5  >= boat_diam )
+ocpZ7.subject_to( Z7_distance6  >= boat_diam )
+ocpZ7.subject_to( Z7_distance7  >= boat_diam )
+""" # Initial condition
+Z7_0_Z1 = ocpZ7.parameter(nx)
+Z7_0_Z2 = ocpZ7.parameter(nx)
+Z7_0_Z3 = ocpZ7.parameter(nx)
+Z7_0_Z4 = ocpZ7.parameter(nx)
+Z7_0_Z5 = ocpZ7.parameter(nx)
+Z7_0_Z6 = ocpZ7.parameter(nx)
+Z7_0_Z7 = ocpZ7.parameter(nx)
+Z7_0_Z8 = ocpZ7.parameter(nx)
+# Initial constraints
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_71)==Z7_0_Z1)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_72)==Z7_0_Z2)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_73)==Z7_0_Z3)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_74)==Z7_0_Z4)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_75)==Z7_0_Z5)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_76)==Z7_0_Z6)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_77)==Z7_0_Z7)
+ocpZ7.subject_to(ocpZ7.at_t0(Z7_Z_78)==Z7_0_Z8)
+ """# Pick a solution method
 ocpZ7.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ7.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -1765,21 +1985,39 @@ if ocpZ8.is_signal(Z8_term8):
     Z8_term8 = ocpZ8.sum(Z8_term8,include_last=True)
 ocpZ8.add_objective(Z8_term8)
 # Constraints
-Z8_distance1  = (z8_x8-z8_x1)**2 + (z8_y8-z8_y1)**2
-Z8_distance2  = (z8_x8-z8_x2)**2 + (z8_y8-z8_y2)**2
-Z8_distance3  = (z8_x8-z8_x3)**2 + (z8_y8-z8_y3)**2
-Z8_distance4  = (z8_x8-z8_x4)**2 + (z8_y8-z8_y4)**2
-Z8_distance5  = (z8_x8-z8_x5)**2 + (z8_y8-z8_y5)**2
-Z8_distance6  = (z8_x8-z8_x6)**2 + (z8_y8-z8_y6)**2
-Z8_distance7  = (z8_x8-z8_x7)**2 + (z8_y8-z8_y7)**2
-ocpZ8.subject_to( Z8_distance1  >= boat_radius )
-ocpZ8.subject_to( Z8_distance2  >= boat_radius )
-ocpZ8.subject_to( Z8_distance3  >= boat_radius )
-ocpZ8.subject_to( Z8_distance4  >= boat_radius )
-ocpZ8.subject_to( Z8_distance5  >= boat_radius )
-ocpZ8.subject_to( Z8_distance6  >= boat_radius )
-ocpZ8.subject_to( Z8_distance7  >= boat_radius )
-# Pick a solution method
+Z8_distance1  = sqrt((z8_x8-z8_x1)**2 + (z8_y8-z8_y1)**2)
+Z8_distance2  = sqrt((z8_x8-z8_x2)**2 + (z8_y8-z8_y2)**2)
+Z8_distance3  = sqrt((z8_x8-z8_x3)**2 + (z8_y8-z8_y3)**2)
+Z8_distance4  = sqrt((z8_x8-z8_x4)**2 + (z8_y8-z8_y4)**2)
+Z8_distance5  = sqrt((z8_x8-z8_x5)**2 + (z8_y8-z8_y5)**2)
+Z8_distance6  = sqrt((z8_x8-z8_x6)**2 + (z8_y8-z8_y6)**2)
+Z8_distance7  = sqrt((z8_x8-z8_x7)**2 + (z8_y8-z8_y7)**2)
+ocpZ8.subject_to( Z8_distance1  >= boat_diam )
+ocpZ8.subject_to( Z8_distance2  >= boat_diam )
+ocpZ8.subject_to( Z8_distance3  >= boat_diam )
+ocpZ8.subject_to( Z8_distance4  >= boat_diam )
+ocpZ8.subject_to( Z8_distance5  >= boat_diam )
+ocpZ8.subject_to( Z8_distance6  >= boat_diam )
+ocpZ8.subject_to( Z8_distance7  >= boat_diam )
+""" # Initial condition
+Z8_0_Z1 = ocpZ8.parameter(nx)
+Z8_0_Z2 = ocpZ8.parameter(nx)
+Z8_0_Z3 = ocpZ8.parameter(nx)
+Z8_0_Z4 = ocpZ8.parameter(nx)
+Z8_0_Z5 = ocpZ8.parameter(nx)
+Z8_0_Z6 = ocpZ8.parameter(nx)
+Z8_0_Z7 = ocpZ8.parameter(nx)
+Z8_0_Z8 = ocpZ8.parameter(nx)
+# Initial constraints
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_81)==Z8_0_Z1)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_82)==Z8_0_Z2)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_83)==Z8_0_Z3)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_84)==Z8_0_Z4)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_85)==Z8_0_Z5)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_86)==Z8_0_Z6)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_87)==Z8_0_Z7)
+ocpZ8.subject_to(ocpZ8.at_t0(Z8_Z_88)==Z8_0_Z8)
+ """# Pick a solution method
 ocpZ8.solver('ipopt',options)
 # Make it concrete for this ocp
 ocpZ8.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
@@ -1960,6 +2198,78 @@ y7_history[0] = current_X7[1]
 x8_history[0] = current_X8[0]
 y8_history[0] = current_X8[1]
 
+ocpZ1.set_initial(Z1_Z_11, current_X1)
+ocpZ1.set_initial(Z1_Z_12, current_X2)
+ocpZ1.set_initial(Z1_Z_13, current_X3)
+ocpZ1.set_initial(Z1_Z_14, current_X4)
+ocpZ1.set_initial(Z1_Z_15, current_X5)
+ocpZ1.set_initial(Z1_Z_16, current_X6)
+ocpZ1.set_initial(Z1_Z_17, current_X7)
+ocpZ1.set_initial(Z1_Z_18, current_X8)
+
+ocpZ2.set_initial(Z2_Z_21, current_X1)
+ocpZ2.set_initial(Z2_Z_22, current_X2)
+ocpZ2.set_initial(Z2_Z_23, current_X3)
+ocpZ2.set_initial(Z2_Z_24, current_X4)
+ocpZ2.set_initial(Z2_Z_25, current_X5)
+ocpZ2.set_initial(Z2_Z_26, current_X6)
+ocpZ2.set_initial(Z2_Z_27, current_X7)
+ocpZ2.set_initial(Z2_Z_28, current_X8)
+
+ocpZ3.set_initial(Z3_Z_31, current_X1)
+ocpZ3.set_initial(Z3_Z_32, current_X2)
+ocpZ3.set_initial(Z3_Z_33, current_X3)
+ocpZ3.set_initial(Z3_Z_34, current_X4)
+ocpZ3.set_initial(Z3_Z_35, current_X5)
+ocpZ3.set_initial(Z3_Z_36, current_X6)
+ocpZ3.set_initial(Z3_Z_37, current_X7)
+ocpZ3.set_initial(Z3_Z_38, current_X8)
+
+ocpZ4.set_initial(Z4_Z_41, current_X1)
+ocpZ4.set_initial(Z4_Z_42, current_X2)
+ocpZ4.set_initial(Z4_Z_43, current_X3)
+ocpZ4.set_initial(Z4_Z_44, current_X4)
+ocpZ4.set_initial(Z4_Z_45, current_X5)
+ocpZ4.set_initial(Z4_Z_46, current_X6)
+ocpZ4.set_initial(Z4_Z_47, current_X7)
+ocpZ4.set_initial(Z4_Z_48, current_X8)
+
+ocpZ5.set_initial(Z5_Z_51, current_X1)
+ocpZ5.set_initial(Z5_Z_52, current_X2)
+ocpZ5.set_initial(Z5_Z_53, current_X3)
+ocpZ5.set_initial(Z5_Z_54, current_X4)
+ocpZ5.set_initial(Z5_Z_55, current_X5)
+ocpZ5.set_initial(Z5_Z_56, current_X6)
+ocpZ5.set_initial(Z5_Z_57, current_X7)
+ocpZ5.set_initial(Z5_Z_58, current_X8)
+
+ocpZ6.set_initial(Z6_Z_61, current_X1)
+ocpZ6.set_initial(Z6_Z_62, current_X2)
+ocpZ6.set_initial(Z6_Z_63, current_X3)
+ocpZ6.set_initial(Z6_Z_64, current_X4)
+ocpZ6.set_initial(Z6_Z_65, current_X5)
+ocpZ6.set_initial(Z6_Z_66, current_X6)
+ocpZ6.set_initial(Z6_Z_67, current_X7)
+ocpZ6.set_initial(Z6_Z_68, current_X8)
+
+ocpZ7.set_initial(Z7_Z_71, current_X1)
+ocpZ7.set_initial(Z7_Z_72, current_X2)
+ocpZ7.set_initial(Z7_Z_73, current_X3)
+ocpZ7.set_initial(Z7_Z_74, current_X4)
+ocpZ7.set_initial(Z7_Z_75, current_X5)
+ocpZ7.set_initial(Z7_Z_76, current_X6)
+ocpZ7.set_initial(Z7_Z_77, current_X7)
+ocpZ7.set_initial(Z7_Z_78, current_X8)
+
+ocpZ8.set_initial(Z8_Z_81, current_X1)
+ocpZ8.set_initial(Z8_Z_82, current_X2)
+ocpZ8.set_initial(Z8_Z_83, current_X3)
+ocpZ8.set_initial(Z8_Z_84, current_X4)
+ocpZ8.set_initial(Z8_Z_85, current_X5)
+ocpZ8.set_initial(Z8_Z_86, current_X6)
+ocpZ8.set_initial(Z8_Z_87, current_X7)
+ocpZ8.set_initial(Z8_Z_88, current_X8)
+
 #Initialization ADMM
 
 for i in range(N_init):
@@ -2139,6 +2449,14 @@ for i in range(N_init):
     
     # Set values and solve for each agent ocpZ
 
+    """ ocpZ1.set_value(Z1_0_Z1, current_X1)
+    ocpZ1.set_value(Z1_0_Z2, current_X2)
+    ocpZ1.set_value(Z1_0_Z3, current_X3)
+    ocpZ1.set_value(Z1_0_Z4, current_X4)
+    ocpZ1.set_value(Z1_0_Z5, current_X5)
+    ocpZ1.set_value(Z1_0_Z6, current_X6)
+    ocpZ1.set_value(Z1_0_Z7, current_X7)
+    ocpZ1.set_value(Z1_0_Z8, current_X8) """
     ocpZ1.set_value(Z1_lambda_11, l11)
     ocpZ1.set_value(Z1_lambda_12, l12)
     ocpZ1.set_value(Z1_lambda_13, l13)
@@ -2156,6 +2474,14 @@ for i in range(N_init):
     ocpZ1.set_value(Z1_X_7, X7p)
     ocpZ1.set_value(Z1_X_8, X8p)
 
+    """ ocpZ2.set_value(Z2_0_Z1, current_X1)
+    ocpZ2.set_value(Z2_0_Z2, current_X2)
+    ocpZ2.set_value(Z2_0_Z3, current_X3)
+    ocpZ2.set_value(Z2_0_Z4, current_X4)
+    ocpZ2.set_value(Z2_0_Z5, current_X5)
+    ocpZ2.set_value(Z2_0_Z6, current_X6)
+    ocpZ2.set_value(Z2_0_Z7, current_X7)
+    ocpZ2.set_value(Z2_0_Z8, current_X8) """
     ocpZ2.set_value(Z2_lambda_21, l21)
     ocpZ2.set_value(Z2_lambda_22, l22)
     ocpZ2.set_value(Z2_lambda_23, l23)
@@ -2173,6 +2499,14 @@ for i in range(N_init):
     ocpZ2.set_value(Z2_X_7, X7p)
     ocpZ2.set_value(Z2_X_8, X8p)
 
+    """ ocpZ3.set_value(Z3_0_Z1, current_X1)
+    ocpZ3.set_value(Z3_0_Z2, current_X2)
+    ocpZ3.set_value(Z3_0_Z3, current_X3)
+    ocpZ3.set_value(Z3_0_Z4, current_X4)
+    ocpZ3.set_value(Z3_0_Z5, current_X5)
+    ocpZ3.set_value(Z3_0_Z6, current_X6)
+    ocpZ3.set_value(Z3_0_Z7, current_X7)
+    ocpZ3.set_value(Z3_0_Z8, current_X8) """
     ocpZ3.set_value(Z3_lambda_31, l31)
     ocpZ3.set_value(Z3_lambda_32, l32)
     ocpZ3.set_value(Z3_lambda_33, l33)
@@ -2190,6 +2524,15 @@ for i in range(N_init):
     ocpZ3.set_value(Z3_X_7, X7p)
     ocpZ3.set_value(Z3_X_8, X8p)
 
+
+    """ ocpZ4.set_value(Z4_0_Z1, current_X1)
+    ocpZ4.set_value(Z4_0_Z2, current_X2)
+    ocpZ4.set_value(Z4_0_Z3, current_X3)
+    ocpZ4.set_value(Z4_0_Z4, current_X4)
+    ocpZ4.set_value(Z4_0_Z5, current_X5)
+    ocpZ4.set_value(Z4_0_Z6, current_X6)
+    ocpZ4.set_value(Z4_0_Z7, current_X7)
+    ocpZ4.set_value(Z4_0_Z8, current_X8) """
     ocpZ4.set_value(Z4_lambda_41, l41)
     ocpZ4.set_value(Z4_lambda_42, l42)
     ocpZ4.set_value(Z4_lambda_43, l43)
@@ -2207,6 +2550,15 @@ for i in range(N_init):
     ocpZ4.set_value(Z4_X_7, X7p)
     ocpZ4.set_value(Z4_X_8, X8p)
 
+
+    """ ocpZ5.set_value(Z5_0_Z1, current_X1)
+    ocpZ5.set_value(Z5_0_Z2, current_X2)
+    ocpZ5.set_value(Z5_0_Z3, current_X3)
+    ocpZ5.set_value(Z5_0_Z4, current_X4)
+    ocpZ5.set_value(Z5_0_Z5, current_X5)
+    ocpZ5.set_value(Z5_0_Z6, current_X6)
+    ocpZ5.set_value(Z5_0_Z7, current_X7)
+    ocpZ5.set_value(Z5_0_Z8, current_X8) """
     ocpZ5.set_value(Z5_lambda_51, l51)
     ocpZ5.set_value(Z5_lambda_52, l52)
     ocpZ5.set_value(Z5_lambda_53, l53)
@@ -2224,6 +2576,15 @@ for i in range(N_init):
     ocpZ5.set_value(Z5_X_7, X7p)
     ocpZ5.set_value(Z5_X_8, X8p)
 
+
+    """ ocpZ6.set_value(Z6_0_Z1, current_X1)
+    ocpZ6.set_value(Z6_0_Z2, current_X2)
+    ocpZ6.set_value(Z6_0_Z3, current_X3)
+    ocpZ6.set_value(Z6_0_Z4, current_X4)
+    ocpZ6.set_value(Z6_0_Z5, current_X5)
+    ocpZ6.set_value(Z6_0_Z6, current_X6)
+    ocpZ6.set_value(Z6_0_Z7, current_X7)
+    ocpZ6.set_value(Z6_0_Z8, current_X8) """
     ocpZ6.set_value(Z6_lambda_61, l61)
     ocpZ6.set_value(Z6_lambda_62, l62)
     ocpZ6.set_value(Z6_lambda_63, l63)
@@ -2241,6 +2602,15 @@ for i in range(N_init):
     ocpZ6.set_value(Z6_X_7, X7p)
     ocpZ6.set_value(Z6_X_8, X8p)
 
+
+    """ ocpZ7.set_value(Z7_0_Z1, current_X1)
+    ocpZ7.set_value(Z7_0_Z2, current_X2)
+    ocpZ7.set_value(Z7_0_Z3, current_X3)
+    ocpZ7.set_value(Z7_0_Z4, current_X4)
+    ocpZ7.set_value(Z7_0_Z5, current_X5)
+    ocpZ7.set_value(Z7_0_Z6, current_X6)
+    ocpZ7.set_value(Z7_0_Z7, current_X7)
+    ocpZ7.set_value(Z7_0_Z8, current_X8) """
     ocpZ7.set_value(Z7_lambda_71, l71)
     ocpZ7.set_value(Z7_lambda_72, l72)
     ocpZ7.set_value(Z7_lambda_73, l73)
@@ -2258,6 +2628,14 @@ for i in range(N_init):
     ocpZ7.set_value(Z7_X_7, X7p)
     ocpZ7.set_value(Z7_X_8, X8p)
 
+    """ ocpZ8.set_value(Z8_0_Z1, current_X1)
+    ocpZ8.set_value(Z8_0_Z2, current_X2)
+    ocpZ8.set_value(Z8_0_Z3, current_X3)
+    ocpZ8.set_value(Z8_0_Z4, current_X4)
+    ocpZ8.set_value(Z8_0_Z5, current_X5)
+    ocpZ8.set_value(Z8_0_Z6, current_X6)
+    ocpZ8.set_value(Z8_0_Z7, current_X7)
+    ocpZ8.set_value(Z8_0_Z8, current_X8) """
     ocpZ8.set_value(Z8_lambda_81, l81)
     ocpZ8.set_value(Z8_lambda_82, l82)
     ocpZ8.set_value(Z8_lambda_83, l83)
@@ -2733,6 +3111,14 @@ for j in range(Nsim):
         
         # Set values and solve for each agent ocpZ
 
+        #ocpZ1.set_value(Z1_0_Z1, current_X1)
+        #ocpZ1.set_value(Z1_0_Z2, current_X2)
+        #ocpZ1.set_value(Z1_0_Z3, current_X3)
+        #ocpZ1.set_value(Z1_0_Z4, current_X4)
+        #ocpZ1.set_value(Z1_0_Z5, current_X5)
+        #ocpZ1.set_value(Z1_0_Z6, current_X6)
+        #ocpZ1.set_value(Z1_0_Z7, current_X7)
+        #ocpZ1.set_value(Z1_0_Z8, current_X8)
         ocpZ1.set_value(Z1_lambda_11, l11)
         ocpZ1.set_value(Z1_lambda_12, l12)
         ocpZ1.set_value(Z1_lambda_13, l13)
@@ -2750,6 +3136,14 @@ for j in range(Nsim):
         ocpZ1.set_value(Z1_X_7, X7p)
         ocpZ1.set_value(Z1_X_8, X8p)
 
+        #ocpZ2.set_value(Z2_0_Z1, current_X1)
+        #ocpZ2.set_value(Z2_0_Z2, current_X2)
+        #ocpZ2.set_value(Z2_0_Z3, current_X3)
+        #ocpZ2.set_value(Z2_0_Z4, current_X4)
+        #ocpZ2.set_value(Z2_0_Z5, current_X5)
+        #ocpZ2.set_value(Z2_0_Z6, current_X6)
+        #ocpZ2.set_value(Z2_0_Z7, current_X7)
+        #ocpZ2.set_value(Z2_0_Z8, current_X8)
         ocpZ2.set_value(Z2_lambda_21, l21)
         ocpZ2.set_value(Z2_lambda_22, l22)
         ocpZ2.set_value(Z2_lambda_23, l23)
@@ -2767,6 +3161,14 @@ for j in range(Nsim):
         ocpZ2.set_value(Z2_X_7, X7p)
         ocpZ2.set_value(Z2_X_8, X8p)
 
+        #ocpZ3.set_value(Z3_0_Z1, current_X1)
+        #ocpZ3.set_value(Z3_0_Z2, current_X2)
+        #ocpZ3.set_value(Z3_0_Z3, current_X3)
+        #ocpZ3.set_value(Z3_0_Z4, current_X4)
+        #ocpZ3.set_value(Z3_0_Z5, current_X5)
+        #ocpZ3.set_value(Z3_0_Z6, current_X6)
+        #ocpZ3.set_value(Z3_0_Z7, current_X7)
+        #ocpZ3.set_value(Z3_0_Z8, current_X8)
         ocpZ3.set_value(Z3_lambda_31, l31)
         ocpZ3.set_value(Z3_lambda_32, l32)
         ocpZ3.set_value(Z3_lambda_33, l33)
@@ -2784,6 +3186,15 @@ for j in range(Nsim):
         ocpZ3.set_value(Z3_X_7, X7p)
         ocpZ3.set_value(Z3_X_8, X8p)
 
+
+        #ocpZ4.set_value(Z4_0_Z1, current_X1)
+        #ocpZ4.set_value(Z4_0_Z2, current_X2)
+        #ocpZ4.set_value(Z4_0_Z3, current_X3)
+        #ocpZ4.set_value(Z4_0_Z4, current_X4)
+        #ocpZ4.set_value(Z4_0_Z5, current_X5)
+        #ocpZ4.set_value(Z4_0_Z6, current_X6)
+        #ocpZ4.set_value(Z4_0_Z7, current_X7)
+        #ocpZ4.set_value(Z4_0_Z8, current_X8)
         ocpZ4.set_value(Z4_lambda_41, l41)
         ocpZ4.set_value(Z4_lambda_42, l42)
         ocpZ4.set_value(Z4_lambda_43, l43)
@@ -2801,6 +3212,15 @@ for j in range(Nsim):
         ocpZ4.set_value(Z4_X_7, X7p)
         ocpZ4.set_value(Z4_X_8, X8p)
 
+
+        #ocpZ5.set_value(Z5_0_Z1, current_X1)
+        #ocpZ5.set_value(Z5_0_Z2, current_X2)
+        #ocpZ5.set_value(Z5_0_Z3, current_X3)
+        #ocpZ5.set_value(Z5_0_Z4, current_X4)
+        #ocpZ5.set_value(Z5_0_Z5, current_X5)
+        #ocpZ5.set_value(Z5_0_Z6, current_X6)
+        #ocpZ5.set_value(Z5_0_Z7, current_X7)
+        #ocpZ5.set_value(Z5_0_Z8, current_X8)
         ocpZ5.set_value(Z5_lambda_51, l51)
         ocpZ5.set_value(Z5_lambda_52, l52)
         ocpZ5.set_value(Z5_lambda_53, l53)
@@ -2818,6 +3238,14 @@ for j in range(Nsim):
         ocpZ5.set_value(Z5_X_7, X7p)
         ocpZ5.set_value(Z5_X_8, X8p)
 
+        #ocpZ6.set_value(Z6_0_Z1, current_X1)
+        #ocpZ6.set_value(Z6_0_Z2, current_X2)
+        #ocpZ6.set_value(Z6_0_Z3, current_X3)
+        #ocpZ6.set_value(Z6_0_Z4, current_X4)
+        #ocpZ6.set_value(Z6_0_Z5, current_X5)
+        #ocpZ6.set_value(Z6_0_Z6, current_X6)
+        #ocpZ6.set_value(Z6_0_Z7, current_X7)
+        #ocpZ6.set_value(Z6_0_Z8, current_X8)
         ocpZ6.set_value(Z6_lambda_61, l61)
         ocpZ6.set_value(Z6_lambda_62, l62)
         ocpZ6.set_value(Z6_lambda_63, l63)
@@ -2835,6 +3263,14 @@ for j in range(Nsim):
         ocpZ6.set_value(Z6_X_7, X7p)
         ocpZ6.set_value(Z6_X_8, X8p)
 
+        #ocpZ7.set_value(Z7_0_Z1, current_X1)
+        #ocpZ7.set_value(Z7_0_Z2, current_X2)
+        #ocpZ7.set_value(Z7_0_Z3, current_X3)
+        #ocpZ7.set_value(Z7_0_Z4, current_X4)
+        #ocpZ7.set_value(Z7_0_Z5, current_X5)
+        #ocpZ7.set_value(Z7_0_Z6, current_X6)
+        #ocpZ7.set_value(Z7_0_Z7, current_X7)
+        #ocpZ7.set_value(Z7_0_Z8, current_X8)
         ocpZ7.set_value(Z7_lambda_71, l71)
         ocpZ7.set_value(Z7_lambda_72, l72)
         ocpZ7.set_value(Z7_lambda_73, l73)
@@ -2852,6 +3288,14 @@ for j in range(Nsim):
         ocpZ7.set_value(Z7_X_7, X7p)
         ocpZ7.set_value(Z7_X_8, X8p)
 
+        #ocpZ8.set_value(Z8_0_Z1, current_X1)
+        #ocpZ8.set_value(Z8_0_Z2, current_X2)
+        #ocpZ8.set_value(Z8_0_Z3, current_X3)
+        #ocpZ8.set_value(Z8_0_Z4, current_X4)
+        #ocpZ8.set_value(Z8_0_Z5, current_X5)
+        #ocpZ8.set_value(Z8_0_Z6, current_X6)
+        #ocpZ8.set_value(Z8_0_Z7, current_X7)
+        #ocpZ8.set_value(Z8_0_Z8, current_X8)
         ocpZ8.set_value(Z8_lambda_81, l81)
         ocpZ8.set_value(Z8_lambda_82, l82)
         ocpZ8.set_value(Z8_lambda_83, l83)
@@ -2868,7 +3312,7 @@ for j in range(Nsim):
         ocpZ8.set_value(Z8_X_6, X6p)
         ocpZ8.set_value(Z8_X_7, X7p)
         ocpZ8.set_value(Z8_X_8, X8p)
-
+        
         solZ1 = ocpZ1.solve()
         solZ2 = ocpZ2.solve()
         solZ3 = ocpZ3.solve()
