@@ -165,7 +165,7 @@ if latch:
     boat_diam = 0.2
 
 
-N_init = 500
+N_init = 10
 mu = 1
 N_mpc = 5
 
@@ -250,6 +250,7 @@ ocpX1.set_der(y1, v1)
 # Lagrange objective
 ocpX1.add_objective(ocpX1.sum((xd_1-x1)**2 + (yd_1-y1)**2))
 ocpX1.add_objective(ocpX1.at_tf((xd_1-x1)**2 + (yd_1-y1)**2))
+ocpX1.add_objective(0*ocpX1.sum(u1**2 + v1**2, include_last=True))
 ocpX1.subject_to( (-max_speed_limit <= u1) <= max_speed_limit )
 ocpX1.subject_to( (-max_speed_limit <= v1) <= max_speed_limit )
 # Extended objective
@@ -492,6 +493,7 @@ ocpX2.set_der(y2, v2)
 # Lagrange objective
 ocpX2.add_objective(ocpX2.sum((xd_2-x2)**2 + (yd_2-y2)**2))
 ocpX2.add_objective(ocpX2.at_tf((xd_2-x2)**2 + (yd_2-y2)**2))
+ocpX2.add_objective(0*ocpX2.sum(u2**2 + v2**2, include_last=True))
 ocpX2.subject_to( (-max_speed_limit <= u2) <= max_speed_limit )
 ocpX2.subject_to( (-max_speed_limit <= v2) <= max_speed_limit )
 # Extended objective
@@ -725,6 +727,7 @@ ocpX3.set_der(y3, v3)
 # Lagrange objective
 ocpX3.add_objective(ocpX3.sum((xd_3-x3)**2 + (yd_3-y3)**2))
 ocpX3.add_objective(ocpX3.at_tf((xd_3-x3)**2 + (yd_3-y3)**2))
+ocpX3.add_objective(0*ocpX3.sum(u3**2 + v3**2, include_last=True))
 ocpX3.subject_to( (-max_speed_limit <= u3) <= max_speed_limit )
 ocpX3.subject_to( (-max_speed_limit <= v3) <= max_speed_limit )
 # Extended objective
@@ -958,6 +961,7 @@ ocpX4.set_der(y4, v4)
 # Lagrange objective
 ocpX4.add_objective(ocpX4.sum((xd_4-x4)**2 + (yd_4-y4)**2))
 ocpX4.add_objective(ocpX4.at_tf((xd_4-x4)**2 + (yd_4-y4)**2))
+ocpX4.add_objective(0*ocpX4.sum(u4**2 + v4**2, include_last=True))
 ocpX4.subject_to( (-max_speed_limit <= u4) <= max_speed_limit )
 ocpX4.subject_to( (-max_speed_limit <= v4) <= max_speed_limit )
 # Extended objective
@@ -1190,6 +1194,7 @@ ocpX5.set_der(y5, v5)
 # Lagrange objective
 ocpX5.add_objective(ocpX5.sum((xd_5-x5)**2 + (yd_5-y5)**2))
 ocpX5.add_objective(ocpX5.at_tf((xd_5-x5)**2 + (yd_5-y5)**2))
+ocpX5.add_objective(0*ocpX5.sum(u5**2 + v5**2, include_last=True))
 ocpX5.subject_to( (-max_speed_limit <= u5) <= max_speed_limit )
 ocpX5.subject_to( (-max_speed_limit <= v5) <= max_speed_limit )
 # Extended objective
@@ -1422,6 +1427,7 @@ ocpX6.set_der(y6, v6)
 # Lagrange objective
 ocpX6.add_objective(ocpX6.sum((xd_6-x6)**2 + (yd_6-y6)**2))
 ocpX6.add_objective(ocpX6.at_tf((xd_6-x6)**2 + (yd_6-y6)**2))
+ocpX6.add_objective(0*ocpX6.sum(u6**2 + v6**2, include_last=True))
 ocpX6.subject_to( (-max_speed_limit <= u6) <= max_speed_limit )
 ocpX6.subject_to( (-max_speed_limit <= v6) <= max_speed_limit )
 # Extended objective
@@ -1654,6 +1660,7 @@ ocpX7.set_der(y7, v7)
 # Lagrange objective
 ocpX7.add_objective(ocpX7.sum((xd_7-x7)**2 + (yd_7-y7)**2))
 ocpX7.add_objective(ocpX7.at_tf((xd_7-x7)**2 + (yd_7-y7)**2))
+ocpX7.add_objective(0*ocpX7.sum(u7**2 + v7**2, include_last=True))
 ocpX7.subject_to( (-max_speed_limit <= u7) <= max_speed_limit )
 ocpX7.subject_to( (-max_speed_limit <= v7) <= max_speed_limit )
 # Extended objective
@@ -1886,6 +1893,7 @@ ocpX8.set_der(y8, v8)
 # Lagrange objective
 ocpX8.add_objective(ocpX8.sum((xd_8-x8)**2 + (yd_8-y8)**2))
 ocpX8.add_objective(ocpX8.at_tf((xd_8-x8)**2 + (yd_8-y8)**2))
+ocpX8.add_objective(0*ocpX8.sum(u8**2 + v8**2, include_last=True))
 ocpX8.subject_to( (-max_speed_limit <= u8) <= max_speed_limit )
 ocpX8.subject_to( (-max_speed_limit <= v8) <= max_speed_limit )
 # Extended objective
@@ -2328,6 +2336,41 @@ ocpZ8.set_initial(Z8_Z_86, current_X6)
 ocpZ8.set_initial(Z8_Z_87, current_X7)
 ocpZ8.set_initial(Z8_Z_88, current_X8)
 
+# ocpX1._method.fatrop_options["warm_start_init_point"] = True
+# ocpX2._method.fatrop_options["warm_start_init_point"] = True
+# ocpX3._method.fatrop_options["warm_start_init_point"] = True
+# ocpX4._method.fatrop_options["warm_start_init_point"] = True
+# ocpX5._method.fatrop_options["warm_start_init_point"] = True
+# ocpX6._method.fatrop_options["warm_start_init_point"] = True
+# ocpX7._method.fatrop_options["warm_start_init_point"] = True
+# ocpX8._method.fatrop_options["warm_start_init_point"] = True
+
+# ocpX1._method.fatrop_options["mu_init"] = 1e-5
+# ocpX2._method.fatrop_options["mu_init"] = 1e-5
+# ocpX3._method.fatrop_options["mu_init"] = 1e-5
+# ocpX4._method.fatrop_options["mu_init"] = 1e-5
+# ocpX5._method.fatrop_options["mu_init"] = 1e-5
+# ocpX6._method.fatrop_options["mu_init"] = 1e-5
+# ocpX7._method.fatrop_options["mu_init"] = 1e-5
+# ocpX8._method.fatrop_options["mu_init"] = 1e-5
+
+# ocpX1._method.fatrop_options["bound_push"] = 1e-7
+# ocpX2._method.fatrop_options["bound_push"] = 1e-7
+# ocpX3._method.fatrop_options["bound_push"] = 1e-7
+# ocpX4._method.fatrop_options["bound_push"] = 1e-7
+# ocpX5._method.fatrop_options["bound_push"] = 1e-7
+# ocpX6._method.fatrop_options["bound_push"] = 1e-7
+# ocpX7._method.fatrop_options["bound_push"] = 1e-7
+# ocpX8._method.fatrop_options["bound_push"] = 1e-7
+
+# ocpX1._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX2._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX3._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX4._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX5._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX6._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX7._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
+# ocpX8._method.fatrop_options["warm_start_mult_bound_push"] = 1e-7
 #Initialization ADMM
 
 for i in range(N_init):
@@ -2504,6 +2547,7 @@ for i in range(N_init):
     X6p = solX6.sample(X6, grid='control')[1].T
     X7p = solX7.sample(X7, grid='control')[1].T
     X8p = solX8.sample(X8, grid='control')[1].T
+    
     
     # Set values and solve for each agent ocpZ
     """ ocpZ1.set_value(Z1_0_Z1, current_X1)
@@ -3092,7 +3136,9 @@ for j in range(Nsim):
         ocpX5.set_value(X5_Z_65, z65)
         ocpX5.set_value(X5_Z_75, z75)
         ocpX5.set_value(X5_Z_85, z85)
-
+        
+        # ocpX5.set_initial(X5, X5p)
+        # ocpX5.set_initial(ocpX5.last_solution())
         solX5 = ocpX5.solve()
 
         ocpX6.set_value(X6_0, current_X6)
