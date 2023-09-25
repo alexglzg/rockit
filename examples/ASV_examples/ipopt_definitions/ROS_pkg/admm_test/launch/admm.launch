@@ -1,0 +1,7 @@
+<launch>
+    
+    <node pkg="admm_test" type="admm_test" name="admm_test" output="screen">
+        <param name="functions_path" type="str" value="/home/alejandro/jackal_ws/src/admm_test/functions"/>
+    </node>
+    
+</launch>

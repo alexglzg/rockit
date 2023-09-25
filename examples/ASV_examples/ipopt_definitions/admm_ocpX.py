@@ -66,7 +66,12 @@ for j in range(number_of_robots):
         term_j = ocpX.sum(term_j,include_last=True)
     ocpX.add_objective(term_j)
 
-options = {"ipopt": {"print_level": 5}}
+options = {"ipopt": {
+    "print_level": 3,
+    # "linear_solver": "ma27",
+    # "tol": 1e-6,
+    'sb': 'yes',
+    }}
 options["expand"] = True
 options["print_time"] = False
 ocpX.solver('ipopt',options)
@@ -75,19 +80,90 @@ ocpX.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
 #ocpX._method.add_sampler("u", u)
 #ocpX._method.add_sampler("v", v)
 
+## Set dummies for parameter values (required for ocp.to_function)
+## In case you create the OCP function without solving the OCP first
+ocpX.set_value(x_ref, 0)
+ocpX.set_value(y_ref, 0)
+
+ocpX.set_value(lambda_i, DM.zeros(nx, Nhor+1))
+ocpX.set_value(copy_i, DM.zeros(nx, Nhor+1))
+
+ocpX.set_value(lambda_ji, DM.zeros(nx*number_of_robots, Nhor+1))
+ocpX.set_value(copy_ji, DM.zeros(nx*number_of_robots, Nhor+1))
+
+ocpX.set_value(X_0, [0, 0])
+
+#####################################
+## Define values for testing
+#####################################
+lambda_value = np.zeros([nx, Nhor+1])
+copy_value = np.zeros([nx, Nhor+1])
+lambda_values = np.zeros([nx*number_of_robots, Nhor+1])
+copy_values = np.zeros([nx*number_of_robots, Nhor+1])
+
+#####################################
+## Solve OCP with from OCP object
+#####################################
+## Set parameters
 ocpX.set_value(x_ref, 1.0)
 ocpX.set_value(y_ref, 1.0)
 
-lambda_value = np.zeros([nx, Nhor+1])
 ocpX.set_value(lambda_i, lambda_value)
-copy_value = np.zeros([nx, Nhor+1])
 ocpX.set_value(copy_i, copy_value)
 
-lambda_values = np.zeros([nx*number_of_robots, Nhor+1])
 ocpX.set_value(lambda_ji, lambda_values)
-copy_values = np.zeros([nx*number_of_robots, Nhor+1])
 ocpX.set_value(copy_ji, copy_values)
 
 ocpX.set_value(X_0, [0, 0])
 
+## Execute the solver
 ocpX.solve()
+
+#########################################
+## Create CasADi function from OCP object
+#########################################
+## Sample variables to get their symbolic representation
+xref_samp = ocpX.value(x_ref)
+yref_samp = ocpX.value(y_ref)
+
+li_samp = ocpX.sample(lambda_i, grid='control')[1]
+ci_samp = ocpX.sample(copy_i, grid='control')[1]
+lji_samp = ocpX.sample(lambda_ji, grid='control')[1]
+cji_samp = ocpX.sample(copy_ji, grid='control')[1]
+
+X_0_samp = ocpX.value(X_0)
+
+
+_, x_samp = ocpX.sample(x, grid='control')
+_, y_samp = ocpX.sample(y, grid='control')
+_, u_samp = ocpX.sample(u, grid='control-')
+_, v_samp = ocpX.sample(v, grid='control-')
+
+## Define inputs and outputs of CasADi function
+inputs = [xref_samp, yref_samp, li_samp, ci_samp, lji_samp, cji_samp, X_0_samp]
+input_names = ['xref_samp', 'yref_samp', 'li_samp', 'ci_samp', 'lji_samp', 'cji_samp', 'X_0_samp']
+
+outputs = [x_samp, y_samp, u_samp, v_samp]
+output_names = ['x_samp', 'y_samp', 'u_samp', 'v_samp']
+
+## Create CasADi function
+ocpX_function = ocpX.to_function('ocpX', 
+                                inputs,
+                                outputs, 
+                                input_names,
+                                output_names)
+
+## Serialize function
+ocpX_function.save('ocpX.casadi')
+
+## Test
+ocpX_function(1.0, 1.0, lambda_value, copy_value, lambda_values, copy_values, [0, 0])
+
+
+######################################
+# Get discrate dynamics for simulation
+######################################
+# Dynamics declaration
+Sim_asv_dyn = ocpX._method.discrete_system(ocpX)
+
+# Sim_asv_dyn.save('sim_asv_dyn.casadi')
