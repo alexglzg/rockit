@@ -165,9 +165,9 @@ if latch:
     boat_diam = 0.2
 
 
-N_init = 10
+N_init = 200
 mu = 1
-N_mpc = 5
+N_mpc = 1
 
 options = {"ipopt": {"print_level": 5}}
 options["expand"] = True
@@ -175,8 +175,8 @@ options["print_time"] = False
 
 nx    = 2                   # the system is composed of 2 states per robot
 nu    = 2                   # the system has 2 inputs per robot
-Tf    = 2                 # control horizon [s]
-Nhor  = 20                  # number of control intervals
+Tf    = 4                 # control horizon [s]
+Nhor  = 80                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
 current_X1 = vertcat(x0_1, y0_1)  # initial state
@@ -250,7 +250,7 @@ ocpX1.set_der(y1, v1)
 # Lagrange objective
 ocpX1.add_objective(ocpX1.sum((xd_1-x1)**2 + (yd_1-y1)**2))
 ocpX1.add_objective(ocpX1.at_tf((xd_1-x1)**2 + (yd_1-y1)**2))
-ocpX1.add_objective(0*ocpX1.sum(u1**2 + v1**2, include_last=True))
+ocpX1.add_objective(ocpX1.sum(u1**2 + v1**2, include_last=True))
 ocpX1.subject_to( (-max_speed_limit <= u1) <= max_speed_limit )
 ocpX1.subject_to( (-max_speed_limit <= v1) <= max_speed_limit )
 # Extended objective
@@ -493,7 +493,7 @@ ocpX2.set_der(y2, v2)
 # Lagrange objective
 ocpX2.add_objective(ocpX2.sum((xd_2-x2)**2 + (yd_2-y2)**2))
 ocpX2.add_objective(ocpX2.at_tf((xd_2-x2)**2 + (yd_2-y2)**2))
-ocpX2.add_objective(0*ocpX2.sum(u2**2 + v2**2, include_last=True))
+ocpX2.add_objective(ocpX2.sum(u2**2 + v2**2, include_last=True))
 ocpX2.subject_to( (-max_speed_limit <= u2) <= max_speed_limit )
 ocpX2.subject_to( (-max_speed_limit <= v2) <= max_speed_limit )
 # Extended objective
@@ -727,7 +727,7 @@ ocpX3.set_der(y3, v3)
 # Lagrange objective
 ocpX3.add_objective(ocpX3.sum((xd_3-x3)**2 + (yd_3-y3)**2))
 ocpX3.add_objective(ocpX3.at_tf((xd_3-x3)**2 + (yd_3-y3)**2))
-ocpX3.add_objective(0*ocpX3.sum(u3**2 + v3**2, include_last=True))
+ocpX3.add_objective(ocpX3.sum(u3**2 + v3**2, include_last=True))
 ocpX3.subject_to( (-max_speed_limit <= u3) <= max_speed_limit )
 ocpX3.subject_to( (-max_speed_limit <= v3) <= max_speed_limit )
 # Extended objective
@@ -961,7 +961,7 @@ ocpX4.set_der(y4, v4)
 # Lagrange objective
 ocpX4.add_objective(ocpX4.sum((xd_4-x4)**2 + (yd_4-y4)**2))
 ocpX4.add_objective(ocpX4.at_tf((xd_4-x4)**2 + (yd_4-y4)**2))
-ocpX4.add_objective(0*ocpX4.sum(u4**2 + v4**2, include_last=True))
+ocpX4.add_objective(ocpX4.sum(u4**2 + v4**2, include_last=True))
 ocpX4.subject_to( (-max_speed_limit <= u4) <= max_speed_limit )
 ocpX4.subject_to( (-max_speed_limit <= v4) <= max_speed_limit )
 # Extended objective
@@ -1194,7 +1194,7 @@ ocpX5.set_der(y5, v5)
 # Lagrange objective
 ocpX5.add_objective(ocpX5.sum((xd_5-x5)**2 + (yd_5-y5)**2))
 ocpX5.add_objective(ocpX5.at_tf((xd_5-x5)**2 + (yd_5-y5)**2))
-ocpX5.add_objective(0*ocpX5.sum(u5**2 + v5**2, include_last=True))
+ocpX5.add_objective(ocpX5.sum(u5**2 + v5**2, include_last=True))
 ocpX5.subject_to( (-max_speed_limit <= u5) <= max_speed_limit )
 ocpX5.subject_to( (-max_speed_limit <= v5) <= max_speed_limit )
 # Extended objective
@@ -1427,7 +1427,7 @@ ocpX6.set_der(y6, v6)
 # Lagrange objective
 ocpX6.add_objective(ocpX6.sum((xd_6-x6)**2 + (yd_6-y6)**2))
 ocpX6.add_objective(ocpX6.at_tf((xd_6-x6)**2 + (yd_6-y6)**2))
-ocpX6.add_objective(0*ocpX6.sum(u6**2 + v6**2, include_last=True))
+ocpX6.add_objective(ocpX6.sum(u6**2 + v6**2, include_last=True))
 ocpX6.subject_to( (-max_speed_limit <= u6) <= max_speed_limit )
 ocpX6.subject_to( (-max_speed_limit <= v6) <= max_speed_limit )
 # Extended objective
@@ -1660,7 +1660,7 @@ ocpX7.set_der(y7, v7)
 # Lagrange objective
 ocpX7.add_objective(ocpX7.sum((xd_7-x7)**2 + (yd_7-y7)**2))
 ocpX7.add_objective(ocpX7.at_tf((xd_7-x7)**2 + (yd_7-y7)**2))
-ocpX7.add_objective(0*ocpX7.sum(u7**2 + v7**2, include_last=True))
+ocpX7.add_objective(ocpX7.sum(u7**2 + v7**2, include_last=True))
 ocpX7.subject_to( (-max_speed_limit <= u7) <= max_speed_limit )
 ocpX7.subject_to( (-max_speed_limit <= v7) <= max_speed_limit )
 # Extended objective
@@ -1893,7 +1893,7 @@ ocpX8.set_der(y8, v8)
 # Lagrange objective
 ocpX8.add_objective(ocpX8.sum((xd_8-x8)**2 + (yd_8-y8)**2))
 ocpX8.add_objective(ocpX8.at_tf((xd_8-x8)**2 + (yd_8-y8)**2))
-ocpX8.add_objective(0*ocpX8.sum(u8**2 + v8**2, include_last=True))
+ocpX8.add_objective(ocpX8.sum(u8**2 + v8**2, include_last=True))
 ocpX8.subject_to( (-max_speed_limit <= u8) <= max_speed_limit )
 ocpX8.subject_to( (-max_speed_limit <= v8) <= max_speed_limit )
 # Extended objective

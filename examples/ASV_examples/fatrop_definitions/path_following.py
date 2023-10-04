@@ -36,12 +36,12 @@ from scipy.optimize import minimize
 # -------------------------------
 # Problem parameters
 # -------------------------------
-m11 = 26.34 
-m22 = 27.41 
-m33 = 1.67
-d11 = 6.70
-d22 = 13.31
-d33 = 0.67
+m11 = 12.0 
+m22 = 16.0 
+m33 = 3.0
+d11 = 6.0
+d22 = 8.0
+d33 = 0.6
 aa = 0.45
 bb = 0.9
 max_force_limit = 6
@@ -53,13 +53,13 @@ Nhor  = 40                  # number of control intervals
 dt    = Tf/Nhor             # sample time
 
 starting_angle = 0.0
-ned_x = 0.0
-ned_y = 0.0
-u_ref = 0.3
+ned_x = 0.2
+ned_y = 3.2
+u_ref = 0.2
 
 x_multiplier = 0.2
-y_amplitude = 1.0
-y_freq = 3*np.pi/40
+#y_amplitude = 1.0
+#y_freq = 3*np.pi/40
 '''def path(s):
     return ((ned_x-x_multiplier*s)**2 + (ned_y-y_amplitude*np.sin(s*y_freq))**2)
 res = minimize(path, 0, method='nelder-mead', options={'xatol': 1e-8, 'disp': True})'''
@@ -68,16 +68,18 @@ def desired_x(s_var):
     return x_multiplier*s_var
 
 def desired_y(s_var):
-    return y_amplitude*np.sin(s_var*y_freq)
+    #return y_amplitude*np.sin(s_var*y_freq)
+    return (np.sin(x_multiplier*s_var)+3)
 
 def path_w_args(s_var, xpos, ypos):
-    return ((xpos-x_multiplier*s_var)**2 + (ypos-y_amplitude*np.sin(s_var*y_freq))**2)
+    #return ((xpos-x_multiplier*s_var)**2 + (ypos-y_amplitude*np.sin(s_var*y_freq))**2)
+    return ((xpos-(x_multiplier*s_var))**2 + (ypos-(np.sin(x_multiplier*s_var)+3))**2)
 s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(ned_x, ned_y), options={'xatol': 1e-8, 'disp': True})
 s_0 = s_0.x
 
 current_X = vertcat(ned_x,ned_y,starting_angle,0,0,0,s_0)  # initial state
 
-Nsim  = int(20 * Nhor / Tf)                 # how much samples to simulate
+Nsim  = int(100 * Nhor / Tf)                 # how much samples to simulate
 
 # -------------------------------
 # Logging variables
@@ -85,6 +87,7 @@ Nsim  = int(20 * Nhor / Tf)                 # how much samples to simulate
 x_history     = np.zeros(Nsim+1)
 y_history   = np.zeros(Nsim+1)
 yaw_history     = np.zeros(Nsim+1)
+u_history     = np.zeros(Nsim+1)
 xd_history     = np.zeros(Nsim+1)
 yd_history   = np.zeros(Nsim+1)
 f1_history       = np.zeros(Nsim)
@@ -110,14 +113,17 @@ u1 = ocp.control()
 u2 = ocp.control()
 u3 = ocp.control()
 u4 = ocp.control()
+
 # Define parameter
-X_0 = ocp.parameter(nx)
+X_0 = ocp.register_parameter(MX.sym('X_0', nx))
 
 # Specify ODE
 x_d = x_multiplier*s
-y_d = y_amplitude*np.sin(s*y_freq)
+#y_d = y_amplitude*np.sin(s*y_freq)
+y_d = sin(s*x_multiplier)+3
 xdot_d = x_multiplier
-ydot_d = y_amplitude*y_freq*cos((y_freq) * s)
+#ydot_d = y_amplitude*y_freq*cos((y_freq) * s)
+ydot_d = x_multiplier*cos(x_multiplier * s)
 gamma_p = atan2(ydot_d, xdot_d)
 ye = -(nedx-x_d)*sin(gamma_p)+(nedy-y_d)*cos(gamma_p)
 ocp.set_der(nedx, (u*cos(psi) - v*sin(psi)))
@@ -128,16 +134,16 @@ ocp.set_der(v, (-d22/m22*v+u3/(m22)+u4/(m22)))
 ocp.set_der(r, (-d33/m33*r+aa/(2*(m33))*u1-aa/(2*(m33))*u2+bb/(2*(m33))*u3-bb/(2*(m33))*u4))
 ocp.set_der(s, u)
 
-Qye = 50.05
-Qr = 0.025
+Qye = 50
+Qr = 0.1
 Qpsi = 5.0
-Qu = 10.0
+Qu = 100.0
 R = 0.005
 #QNye = 50.1
 #QNr = 0.05
 
 # Lagrange objective
-ocp.add_objective(ocp.integral(Qye*(ye**2) + Qr*(r**2) + Qpsi*(psi-gamma_p)**2 + Qu*(u-u_ref)**2 + u1**2 + u2**2 + u3*2 + u4**2))
+ocp.add_objective(ocp.sum(Qye*(ye**2) + Qr*(r**2) + Qpsi*(psi-gamma_p)**2 + Qu*(u-u_ref)**2 + u1**2 + u2**2 + u3*2 + u4**2))
 ocp.add_objective(ocp.at_tf(Qye*(ye**2) + Qr*(r**2) + Qpsi*(psi-gamma_p)**2 + Qu*(u-u_ref)**2))
 
 # Path constraints
@@ -145,11 +151,21 @@ ocp.subject_to( (-max_force_limit <= u1) <= max_force_limit )
 ocp.subject_to( (-max_force_limit <= u2) <= max_force_limit )
 ocp.subject_to( (-max_force_limit <= u3) <= max_force_limit )
 ocp.subject_to( (-max_force_limit <= u4) <= max_force_limit )
-ocp.subject_to( s >= 0)
+#ocp.subject_to( s >= 0)
 
 # Initial constraints
 X = vertcat(nedx,nedy,psi,u,v,r,s)
 ocp.subject_to(ocp.at_t0(X)==X_0)
+
+# -------------------------------
+# Solve the OCP wrt a parameter value (for the first time)
+# -------------------------------
+# Set initial value for parameters
+ocp.set_value(X_0, current_X)
+# Solve
+#sol = ocp.solve()
+
+ocpf = ocp
 
 # Pick a solution method
 options = {"ipopt": {"print_level": 0}}
@@ -160,21 +176,27 @@ ocp.solver('ipopt',options)
 # Make it concrete for this ocp
 ocp.method(MultipleShooting(N=Nhor,M=1,intg='rk'))
 
-# -------------------------------
-# Solve the OCP wrt a parameter value (for the first time)
-# -------------------------------
-# Set initial value for parameters
-ocp.set_value(X_0, current_X)
-# Solve
-sol = ocp.solve()
-
 # Get discretisd dynamics as CasADi function
 Sim_asv_dyn = ocp._method.discrete_system(ocp)
+
+# fatrop
+method = external_method('fatrop',N=Nhor, intg='rk')
+ocpf.method(method)
+
+#ocpf._method.add_sampler('Urdot', Urdot)
+ocpf._method.add_sampler('f1', u1)
+ocpf._method.add_sampler('f2', u2)
+ocpf._method.add_sampler('f3', u3)
+ocpf._method.add_sampler('f4', u4)
+ocpf.set_value(X_0, current_X)
+# Solve
+sol = ocpf.solve()
 
 # Log data for post-processing
 x_history[0]   = current_X[0]
 y_history[0] = current_X[1]
 yaw_history[0]   = current_X[2]
+u_history[0]   = current_X[3]
 xd_history[0]   = desired_x(s_0)
 yd_history[0] = desired_y(s_0)
 
@@ -195,16 +217,16 @@ for i in range(Nsim):
     s_0 = minimize(path_w_args, 0, method='nelder-mead', args=(current_X[0], current_X[1]), options={'xatol': 1e-8, 'disp': True})
     s_0 = s_0.x
     # Set the parameter X0 to the new current_X
-    ocp.set_value(X_0, vertcat(current_X[:6],s_0))
+    ocpf.set_value(X_0, vertcat(current_X[:6],s_0))
     #ocp.set_value(X_0, current_X[:7])
     # Solve the optimization problem
-    sol = ocp.solve()
-    ocp._method.opti.set_initial(ocp._method.opti.x, ocp._method.opti.value(ocp._method.opti.x))
+    sol = ocpf.solve()
 
     # Log data for post-processing
     x_history[i+1]   = current_X[0].full()
     y_history[i+1] = current_X[1].full()
     yaw_history[i+1]   = current_X[2].full()
+    u_history[i+1]   = current_X[3].full()
     f1_history[i]       = f1sol[0]
     f2_history[i]       = f2sol[0]
     f3_history[i]       = f3sol[0]
@@ -238,5 +260,12 @@ ax6.plot(time_sim, yaw_history, 'b-')
 ax6.set_xlabel('Time [s]')
 ax6.set_ylabel('yaw [rad]')
 fig4.tight_layout()
+
+fig5, ax7 = plt.subplots()
+ax7.plot(time_sim, u_history, 'b-')
+ax7.set_xlabel('Time [s]')
+ax7.set_ylabel('u [m/s]')
+fig5.tight_layout()
+
 
 plt.show()
